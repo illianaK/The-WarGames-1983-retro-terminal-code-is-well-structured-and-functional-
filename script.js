@@ -204,7 +204,7 @@ function checkWin(symbol) {
 
 function getBestMove() {
     let available = tttBoard.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
-    
+
     for (let idx of available) {
         tttBoard[idx] = 'O';
         if (checkWin('O')) { tttBoard[idx] = ''; return idx; }
@@ -247,8 +247,15 @@ const card = document.querySelector('.card');
 button.addEventListener('click', () => {
     // Change the text content dynamically
     statusText.textContent = "Awesome! Everything is working.";
-    
+
     // Add the CSS class to change the style dynamically
     card.classList.add('success');
     button.textContent = "Connected";
+ 
+  // Add the script js to change display dynamically 
+DisplayMetrics displayMetrics = new DisplayMetrics();
+getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+int screenHeight = displayMetrics.heightPixels;
+int screenWidth = displayMetrics.widthPixels;
+  
 });
