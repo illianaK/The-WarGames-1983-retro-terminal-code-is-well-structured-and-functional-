@@ -2,10 +2,15 @@ const screen = document.getElementById('screen');
 const input = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
 
+// Terminal State Tracker Machine
 let state = 'INITIAL';
+let simInterval = null;
+let galagaLoop = null;
+
+// Game Global Memory Buffers
+let gameData = {};
 let tttBoard = ['', '', '', '', '', '', '', '', ''];
 let playerTurn = true;
-let simInterval = null;
 let activeBoardElement = null;
 
 const games = [
@@ -21,63 +26,59 @@ const games = [
     "GLOBAL THERMONUCLEAR WAR"
 ];
 
-// --- RETRO SOUND GENERATOR (Web Audio API) ---
+// --- NATIVE BROWSER AUDIO MAIN SYNTH SYSTEM ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
 function playTone(freq, type, duration) {
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    
     osc.type = type;
     osc.frequency.value = freq;
-    
-    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-    
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-    
     osc.start();
     osc.stop(audioCtx.currentTime + duration);
 }
 
 const sounds = {
-    keystroke: () => playTone(600, 'square', 0.03),
-    systemPrint: () => playTone(800, 'sine', 0.02),
-    alert: () => {
-        playTone(400, 'sawtooth', 0.1);
-        setTimeout(() => playTone(300, 'sawtooth', 0.1), 120);
+    click: () => playTone(650, 'square', 0.02),
+    print: () => playTone(850, 'sine', 0.015),
+    pew: () => playTone(880, 'sawtooth', 0.07),
+    enemyPew: () => playTone(440, 'sine', 0.06),
+    boom: () => playTone(140, 'sawtooth', 0.25),
+    hurt: () => {
+        playTone(200, 'triangle', 0.15);
+        setTimeout(() => playTone(150, 'triangle', 0.15), 100);
+    },
+    warn: () => {
+        playTone(480, 'sawtooth', 0.08);
+        setTimeout(() => playTone(360, 'sawtooth', 0.08), 90);
     }
 };
 
-// --- RETRO TYPEWRITER PRINTER ---
+// --- CORE RETRO ASYNC TYPEWRITER PRINTER ---
 function appendLine(text, className = 'system-msg') {
     return new Promise((resolve) => {
         const line = document.createElement('div');
         line.className = `line ${className}`;
         screen.appendChild(line);
         
-        let isHTML = text.includes('<') && text.includes('>');
-        
-        if (isHTML || className === 'user-msg') {
+        if ((text.includes('<') && text.includes('>')) || className === 'user-msg') {
             line.innerHTML = text;
             screen.scrollTop = screen.scrollHeight;
-            if (className !== 'user-msg') sounds.systemPrint();
+            if (className !== 'user-msg') sounds.print();
             resolve();
         } else {
             let index = 0;
-            const typingSpeed = 35;
-            
             function typeChar() {
                 if (index < text.length) {
                     line.textContent += text.charAt(index);
                     index++;
-                    sounds.systemPrint();
+                    sounds.print();
                     screen.scrollTop = screen.scrollHeight;
-                    setTimeout(typeChar, typingSpeed);
+                    setTimeout(typeChar, 15);
                 } else {
                     resolve();
                 }
@@ -87,24 +88,39 @@ function appendLine(text, className = 'system-msg') {
     });
 }
 
+// --- TERMINAL COMMAND INPUT PROCESSOR ---
 function processInput() {
     const text = input.value.trim();
-    if (!text && state !== 'PLAYING_TTT') return;
+    if (!text && state !== 'GAME_TTT') return;
 
     if (text) {
-        sounds.keystroke();
+        sounds.click();
         appendLine(`> ${text}`, 'user-msg');
         input.value = '';
     }
 
     const upperText = text.toUpperCase();
 
+    // Global intercept escape codes
+    if (upperText === 'QUIT' || upperText === 'EXIT' || upperText === 'BYE') {
+        cleanUpActiveLoops();
+        resetTerminal();
+        return;
+    }
+
+    // Secret Easter Egg Gateway Injection Trigger!
+    if (upperText === 'GALAGA' || upperText === 'BOOM') {
+        cleanUpActiveLoops();
+        startGalagaSecretEgg();
+        return;
+    }
+
     switch (state) {
         case 'INITIAL':
             if (upperText.includes('GAME') || upperText.includes('YES') || upperText.includes('LIST')) {
                 appendLine("AVAILABLE GAMES:").then(() => {
                     games.forEach((g, i) => appendLine(`  ${i + 1}. ${g}`));
-                    appendLine("<br>PLEASE CHOOSE A GAME:");
+                    appendLine("<br>PLEASE CHOOSE A GAME NAME OR NUMBER:");
                     state = 'SELECT_GAME';
                 });
             } else {
@@ -113,203 +129,129 @@ function processInput() {
             break;
 
         case 'SELECT_GAME':
-            if (upperText.includes('GLOBAL') || upperText.includes('THERMONUCLEAR') || upperText === '10') {
-                startGlobalWar();
-            } else if (upperText.includes('TIC') || upperText.includes('TAC') || upperText === '9') {
-                startTicTacToe();
-            } else {
-                appendLine("THAT GAME IS CURRENTLY UNAVAILABLE DUE TO SYSTEM CONSTRAINTS.").then(() => {
-                    appendLine("PLEASE SELECT EITHER 'TIC-TAC-TOE' OR 'GLOBAL THERMONUCLEAR WAR'.");
-                });
-            }
+            handleGameSelection(upperText);
             break;
 
-        case 'PLAYING_TTT':
-            if (upperText === 'QUIT' || upperText === 'EXIT') {
+        case 'GAME_MAZE': handleMazeInput(upperText); break;
+        case 'GAME_BJ': handleBlackjackInput(upperText); break;
+        case 'GAME_RUMMY': case 'GAME_HEARTS': case 'GAME_BRIDGE': case 'GAME_POKER':
+            handleCardSimInput(upperText); break;
+        case 'GAME_CHECKERS': case 'GAME_CHESS': handleBoardSimInput(upperText); break;
+        case 'GAME_WAR':
+            if (upperText === 'STOP') {
+                clearInterval(simInterval);
+                appendLine("WAR SIMULATION EMERGENCY CANCELLATION DETECTED.");
                 resetTerminal();
             }
             break;
-
-        case 'SIMULATING_WAR':
-            if (upperText === 'STOP' || upperText === 'QUIT' || upperText === 'TIC-TAC-TOE') {
-                clearInterval(simInterval);
-                appendLine("SIMULATION ABORTED.");
-                startTicTacToe();
-            }
+        case 'GAME_GALAGA':
+            handleGalagaControlsInput(upperText);
             break;
     }
 }
 
-function startGlobalWar() {
-    state = 'SIMULATING_WAR';
-    sounds.alert();
-    appendLine("<br><span class='defcon-warning'>--- INITIATING GLOBAL THERMONUCLEAR WAR SIMULATION ---</span>");
-    appendLine("PRIMARY TARGET: UNITED STATES / USSR");
-    appendLine("CALCULATING OPTIMAL TRAJECTORIES...");
-
-    let targetCities = ["WASHINGTON D.C.", "MOSCOW", "NORAD / CHEYENNE MT.", "LENINGRAD", "LOS ANGELES", "KIEV", "CHICAGO", "MINSK"];
-    let count = 0;
-
-    simInterval = setInterval(() => {
-        if (count < 10) {
-            let source = count % 2 === 0 ? "US ICBM" : "SOVIET SLBM";
-            let target = targetCities[Math.floor(Math.random() * targetCities.length)];
-            let casual = (Math.floor(Math.random() * 80) + 10) * 100000;
-            sounds.alert();
-            appendLine(`STRIKE DETECTED: ${source} -> ${target} | CASUALTIES: ${casual.toLocaleString()}`, 'defcon-warning');
-            count++;
-        } else {
-            clearInterval(simInterval);
-            appendLine("<br>ANALYZING STRATEGIC RESULTS...");
-            setTimeout(() => {
-                appendLine("<span class='defcon-warning'>WINNER: NONE</span>");
-                appendLine("<br>A STRANGE GAME.");
-                appendLine("THE ONLY WINNING MOVE IS NOT TO PLAY.");
-                appendLine("<br>HOW ABOUT A NICE GAME OF CHESS OR TIC-TAC-TOE?");
-                state = 'SELECT_GAME';
-            }, 2000);
-        }
-    }, 1500);
+function cleanUpActiveLoops() {
+    if (simInterval) clearInterval(simInterval);
+    if (galagaLoop) cancelAnimationFrame(galagaLoop);
+    window.onkeydown = null;
+    window.onkeyup = null;
 }
 
-function startTicTacToe() {
-    state = 'PLAYING_TTT';
-    tttBoard = ['', '', '', '', '', '', '', '', ''];
-    playerTurn = true;
-
-    appendLine("<br>INITIALIZING TIC-TAC-TOE...").then(() => {
-        appendLine("CLICK A CELL ON THE BOARD TO PLACE 'X':");
-        
-        const boardDiv = document.createElement('div');
-        boardDiv.className = 'board-container';
-
-        const grid = document.createElement('div');
-        grid.className = 'tic-tac-toe';
-
-        for (let i = 0; i < 9; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.dataset.index = i;
-            cell.addEventListener('click', handleCellClick);
-            grid.appendChild(cell);
-        }
-
-        boardDiv.appendChild(grid);
-        activeBoardElement = boardDiv;
-        screen.appendChild(boardDiv);
-        screen.scrollTop = screen.scrollHeight;
-    });
+// --- SELECTING ROUTER PIPELINE ---
+function handleGameSelection(input) {
+    if (input.includes("MAZE") || input === "1") startMaze();
+    else if (input.includes("BLACK") || input === "2") startBlackjack();
+    else if (input.includes("GIN") || input === "3") startCardSim("GIN RUMMY", "GAME_RUMMY");
+    else if (input.includes("HEART") || input === "4") startCardSim("HEARTS", "GAME_HEARTS");
+    else if (input.includes("BRIDGE") || input === "5") startCardSim("BRIDGE", "GAME_BRIDGE");
+    else if (input.includes("CHECKER") || input === "6") startBoardSim("CHECKERS", "GAME_CHECKERS");
+    else if (input.includes("CHESS") || input === "7") startBoardSim("CHESS", "GAME_CHESS");
+    else if (input.includes("POKER") || input === "8") startCardSim("POKER", "GAME_POKER");
+    else if (input.includes("TIC") || input === "9") startTicTacToe();
+    else if (input.includes("WAR") || input.includes("GLOBAL") || input === "10") startGlobalWar();
+    else appendLine("UNKNOWN SELECTION. ACCESS DENIED FROM NORAD DATA BUFFER COMPARTMENT.");
 }
 
-function handleCellClick(e) {
-    if (!playerTurn || state !== 'PLAYING_TTT') return;
-
-    const index = e.target.dataset.index;
-    if (tttBoard[index] !== '') return;
-
-    sounds.keystroke();
-    makeMove(index, 'X');
-
-    if (checkWin('X')) {
-        appendLine("YOU WIN! UNLIKELY OUTCOME DETECTED.");
-        endGame();
-        return;
+// --- GAME 1: FALKEN'S MAZE ---
+function startMaze() {
+    state = 'GAME_MAZE';
+    gameData = { room: 1 };
+    appendLine("<br>INITIALIZING FALKEN'S MAZE ROUTINE v1.0...");
+    appendLine("YOU STAND IN A DARK CORRIDOR SUBTERRANEAN TO NORAD COMLINK UNIT.");
+    appendLine("AVAILABLE PATHS: 'NORTH' TO MAIN TERMINAL HOUSING, 'EAST' TO SECURITY DUMP.");
+}
+function handleMazeInput(action) {
+    if (gameData.room === 1) {
+        if (action === 'NORTH') {
+            gameData.room = 2;
+            appendLine("YOU INSIDE THE MAINFRAME ROOM. CHASSIS LIGHTS BLINK STEADILY.");
+            appendLine("A DESK SITS TO THE WEST containing a diary. 'WEST' OR GO BACK 'SOUTH'?");
+        } else if (action === 'EAST') {
+            appendLine("SECURITY GRATING BARRED FROM THE ROOM ENTRY WAY. CHOOSE ANOTHER ACCESS VECTOR.");
+        } else appendLine("COMMAND NOT COGNIZANT. OPTIONS: NORTH, EAST.");
+    } else if (gameData.room === 2) {
+        if (action === 'WEST') {
+            appendLine("YOU OPEN FALKEN'S DIARY. THE INSCRIPTION READS: 'THE WINNING MOVE IS NOT TO PLAY.'");
+            appendLine("MAZE CONCLUDED successfully. TRANSFERRING TERMINAL COMMAND LOGS OUT.");
+            endGame();
+        } else if (action === 'SOUTH') {
+            gameData.room = 1;
+            appendLine("RETURNING BACK TO DARK ENTRY CORRIDOR.");
+        } else appendLine("COMMAND REJECTED. ENTRY OPTIONS: WEST, SOUTH.");
     }
+}
 
-    if (isBoardFull()) {
-        appendLine("GAME IS A DRAW.");
+// --- GAME 2: BLACKJACK ---
+function startBlackjack() {
+    state = 'GAME_BJ';
+    gameData = {
+        player: [getRandomCard(), getRandomCard()],
+        dealer: [getRandomCard(), getRandomCard()]
+    };
+    appendLine("<br>BLACKJACK PROTOCOL LOADED.");
+    displayBJStatus();
+}
+function getRandomCard() { return Math.floor(Math.random() * 10) + 2; }
+function calcHand(hand) { return hand.reduce((a,b) => a+b, 0); }
+function displayBJStatus() {
+    appendLine(`YOUR HAND VALUE: ${calcHand(gameData.player)}`);
+    appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer}`);
+    appendLine("ENTER COMMAND ACTION: 'HIT' OR 'STAND'");
+}
+function handleBlackjackInput(action) {
+    if (action === 'HIT') {
+        gameData.player.push(getRandomCard());
+        let pTotal = calcHand(gameData.player);
+        if (pTotal > 21) {
+            appendLine(`HAND VALUE CRASH: ${pTotal}. YOU BUSTED. W.O.P.R. WINS.`);
+            endGame();
+        } else displayBJStatus();
+    } else if (action === 'STAND') {
+        let dTotal = calcHand(gameData.dealer);
+        while (dTotal < 17) {
+            gameData.dealer.push(getRandomCard());
+            dTotal = calcHand(gameData.dealer);
+        }
+        let pTotal = calcHand(gameData.player);
+        appendLine(`FINAL DEALER COUNT: ${dTotal} | YOUR HAND COUNT: ${pTotal}`);
+        if (dTotal > 21 || pTotal > dTotal) appendLine("YOU WIN! STRATEGIC ANOMALY.");
+        else if (dTotal === pTotal) appendLine("ROUND TIE. GAME IS A DRAW.");
+        else appendLine("W.O.P.R. HAND DOMINATES. YOU LOSE.");
         endGame();
-        return;
-    }
+    } else appendLine("INVALID COMPILING KEYWORD. SUBMIT ACTION 'HIT' OR 'STAND'.");
+}
 
-    playerTurn = false;
-    appendLine("W.O.P.R. IS CALCULATING MOVE...");
-
+// --- GAMES 3, 4, 5, 8: CARDS SIMULATOR BASE MACHINE ---
+function startCardSim(title, targetState) {
+    state = targetState;
+    appendLine(`<br>ESTABLISHING SECURE CONNECTION CARD DECK PARSER FOR: ${title}`);
+    appendLine("DISTRIBUTING SYSTEM DATA PACKETS HAND GENERATORS...");
     setTimeout(() => {
-        const aiMove = getBestMove();
-        makeMove(aiMove, 'O');
-        sounds.keystroke();
-
-        if (checkWin('O')) {
-            appendLine("W.O.P.R. WINS.");
-            endGame();
-        } else if (isBoardFull()) {
-            appendLine("GAME IS A DRAW.");
-            appendLine("RESULT: MUTUALLY ASSURED DESTRUCTION AVERTED.");
-            endGame();
-        } else {
-            playerTurn = true;
-        }
-    }, 800);
+        appendLine("DEALER COMPLETED. YOUR HAND REVEALS STRATEGIC METRICS:");
+        appendLine("  [ACE ♠] [JACK ♣] [KING ♦] [10 ♥] [7 ♠]");
+        appendLine("W.O.P.R. OFFERS CARD SHIFT SWAP SYSTEM EXCHANGE. ACTION OPTIONS: 'PLAY' OR 'FOLD'");
+    }, 400);
 }
-
-function makeMove(index, symbol) {
-    tttBoard[index] = symbol;
-    if (activeBoardElement) {
-        const cells = activeBoardElement.querySelectorAll('.cell');
-        if (cells[index]) cells[index].innerText = symbol;
-    }
-}
-
-function isBoardFull() {
-    return tttBoard.every(cell => cell !== '');
-}
-
-function checkWin(symbol) {
-    const winPatterns = [, [3,4,5], [6,7,8],
-, [1,4,7], [2,5,8],
-, [2,4,6]
-    ];
-    return winPatterns.some(pattern => {
-        return pattern.every(index => tttBoard[index] === symbol);
-    });
-}
-
-function getBestMove() {
-    let available = tttBoard.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
-
-    for (let idx of available) {
-        tttBoard[idx] = 'O';
-        if (checkWin('O')) { tttBoard[idx] = ''; return idx; }
-        tttBoard[idx] = '';
-    }
-
-    for (let idx of available) {
-        tttBoard[idx] = 'X';
-        if (checkWin('X')) { tttBoard[idx] = ''; return idx; }
-        tttBoard[idx] = '';
-    }
-
-    if (available.includes(4)) return 4;
-
-    return available[Math.floor(Math.random() * available.length)];
-}
-
-function endGame() {
-    state = 'INITIAL';
-    appendLine("<br>SHALL WE PLAY ANOTHER GAME?");
-}
-
-function resetTerminal() {
-    state = 'INITIAL';
-    appendLine("SYSTEM RESET COMPLETE.");
-    appendLine("SHALL WE PLAY A GAME?");
-}
-
-sendBtn.addEventListener('click', processInput);
-input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') processInput();
-});
-
-// Original button code elements setup
-const button = document.getElementById('action-btn');
-const statusText = document.getElementById('status-text');
-const card = document.querySelector('.card');
-
-if (button) {
-    button.addEventListener('click', () => {
-        statusText.textContent = "Awesome! Everything is working.";
-        card.classList.add('success');
-        button.textContent = "Connected";
-    });
-}
+function handleCardSimInput(action) {
+    if (action === 'PLAY' || action === 'BET') {
+        if (Math.random() > 0.45) appendLine("SHOWDOWN LOGGED: YOUR HIGHER VALUES CONCLUDE VICTORY CONSTRAINTS.");
