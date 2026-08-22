@@ -1,174 +1,266 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+const screen = document.getElementById('screen');
+const input = document.getElementById('userInput');
+
+// Terminal State Tracker Machine
+let state = 'INITIAL';
+let simInterval = null;
+let galagaLoop = null;
+
+// Game Global Memory Buffers
+let gameData = {};
+let tttBoard = ['', '', '', '', '', '', '', '', ''];
+let playerTurn = true;
+let activeBoardElement = null;
+
+const games = [
+    "FALKEN'S MAZE",
+    "BLACK JACK",
+    "GIN RUMMY",
+    "HEARTS",
+    "BRIDGE",
+    "CHECKERS",
+    "CHESS",
+    "POKER",
+    "TIC-TAC-TOE",
+    "GLOBAL THERMONUCLEAR WAR"
+];
+
+// --- NATIVE BROWSER AUDIO MAIN SYNTH SYSTEM ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, type, duration) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
 }
 
-body {
-    background-color: #000000;
-    color: #33ff33;
-    font-family: 'Courier New', Courier, monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    /* Uses dynamic viewport units to respect virtual mobile keyboard bounds */
-    min-height: 100dvh; 
-    padding: 10px;
-    overflow: hidden;
-}
-
-/* Restores vintage layout proportions on desktop but adapts cleanly on small devices */
-.terminal-container {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
-    /* Acts as the baseline desktop profile but automatically scales down */
-    height: 600px; 
-    max-height: 85dvh; 
-    background-color: #000000;
-    border: 4px solid #005500;
-    border-radius: 4px;
-    box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-    overflow: hidden;
-}
-
-/* Forces text display logs to take up remaining height space dynamically */
-#screen {
-    flex: 1;
-    display: flex;          /* FIXED: Establishes rigid flow parameters */
-    flex-direction: column; /* FIXED: Keeps print messages uniformly aligned */
-    overflow-y: auto;
-    margin-bottom: 10px;
-}
-
-/* Retro phosphor configurations remain solid */
-.line {
-    flex-shrink: 0;         /* FIXED: Denies the layout wrapper permission to crush vertical height */
-    margin-bottom: 8px;
-    line-height: 1.4;
-    font-size: 15px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    white-space: pre-wrap;
-    text-shadow: 0 0 6px rgba(51, 255, 51, 0.8);
-}
-
-.user-msg {
-    color: #88ff88;
-    text-shadow: 0 0 6px rgba(136, 255, 136, 0.8);
-}
-
-.defcon-warning {
-    color: #ff3333;
-    text-shadow: 0 0 8px rgba(255, 51, 51, 0.9);
-}
-
-/* Input prompt is pulled up when screen area scales down */
-.input-container {
-    display: flex;
-    align-items: center;
-    border-top: 2px solid #004400;
-    padding-top: 10px;
-    flex-shrink: 0; /* Prevents command prompt line compression */
-}
-
-.prompt {
-    font-weight: bold;
-    margin-right: 10px;
-    font-size: 16px;
-    text-shadow: 0 0 6px rgba(51, 255, 51, 0.8);
-}
-
-#userInput {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: #33ff33;
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: bold;
-    text-shadow: 0 0 6px rgba(51, 255, 51, 0.8);
-    caret-color: #33ff33;
-}
-
-/* Interactive board bounds update */
-.board-container {
-    margin: 8px 0;
-    background: #000000;
-    padding: 6px;
-    border: 2px solid #005500;
-    display: inline-block;
-    flex-shrink: 0;
-}
-
-.tic-tac-toe {
-    display: grid;
-    grid-template-columns: repeat(3, 45px);
-    grid-gap: 5px;
-}
-
-.cell {
-    width: 45px;
-    height: 45px;
-    border: 2px solid #005500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    font-weight: bold;
-    color: #33ff33;
-    cursor: pointer;
-}
-
-/* Responsive constraints on arcade wrapper */
-.galaga-canvas-wrapper {
-    margin: 10px auto;
-    border: 3px double #00ff00;
-    background: #000000;
-    max-width: 100%;
-    max-height: 200px;
-    flex-shrink: 0;
-}
-
-.galaga-canvas-wrapper canvas {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    max-height: 100%;
-}
-
-/* Screen overlay filters */
-.scanlines {
-    pointer-events: none;
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
-    background-size: 100% 4px;
-    z-index: 10;
-}
-
-.crt-glow {
-    pointer-events: none;
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(circle at center, transparent 50%, rgba(0, 10, 0, 0.4) 100%);
-    z-index: 11;
-}
-
-#screen::-webkit-scrollbar { width: 6px; }
-#screen::-webkit-scrollbar-track { background: #000; }
-#screen::-webkit-scrollbar-thumb { background: #004400; }
-
-@media (max-width: 600px) {
-    .terminal-container {
-        height: 92dvh; /* Maximizes remaining visible bounds inside small screen wrappers */
+const sounds = {
+    click: () => playTone(650, 'square', 0.02),
+    print: () => playTone(850, 'sine', 0.015),
+    pew: () => playTone(880, 'sawtooth', 0.07),
+    enemyPew: () => playTone(440, 'sine', 0.06),
+    boom: () => playTone(140, 'sawtooth', 0.25),
+    hurt: () => {
+        playTone(200, 'triangle', 0.15);
+        setTimeout(() => playTone(150, 'triangle', 0.15), 100);
+    },
+    warn: () => {
+        playTone(480, 'sawtooth', 0.08);
+        setTimeout(() => playTone(360, 'sawtooth', 0.08), 90);
     }
-    .line {
-        font-size: 14px;
+};
+
+// --- CORE RETRO ASYNC TYPEWRITER PRINTER (FIXED OVERFLOW & SCROLL) ---
+function appendLine(text, className = 'system-msg') {
+    return new Promise((resolve) => {
+        const line = document.createElement('div');
+        line.className = `line ${className}`;
+        screen.appendChild(line);
+
+        // Utility to cleanly force standard scroll to bottom
+        const scrollToBottom = () => {
+            screen.scrollTop = screen.scrollHeight;
+        };
+
+        if ((text.includes('<') && text.includes('>')) || className === 'user-msg') {
+            line.innerHTML = text;
+            scrollToBottom();
+            if (className !== 'user-msg') sounds.print();
+            resolve();
+        } else {
+            let index = 0;
+            function typeChar() {
+                if (index < text.length) {
+                    line.textContent += text.charAt(index);
+                    index++;
+                    sounds.print();
+                    scrollToBottom(); // Locks terminal bottom anchoring per character print
+                    setTimeout(typeChar, 10);
+                } else {
+                    scrollToBottom();
+                    resolve();
+                }
+            }
+            typeChar();
+        }
+    });
+}
+
+// --- TERMINAL COMMAND INPUT PROCESSOR ---
+function processInput() {
+    const text = input.value.trim();
+    if (!text && state !== 'GAME_TTT') return;
+
+    if (text) {
+        sounds.click();
+        appendLine(`> ${text}`, 'user-msg');
+        input.value = '';
+    }
+
+    const upperText = text.toUpperCase();
+
+    // Global escape commands
+    if (upperText === 'QUIT' || upperText === 'EXIT' || upperText === 'BYE') {
+        cleanUpActiveLoops();
+        resetTerminal();
+        return;
+    }
+
+    // Secret Easter Egg Trigger
+    if (upperText === 'GALAGA') {
+        cleanUpActiveLoops();
+        startGalagaSecretEgg(1, 0, 3);
+        return;
+    }
+
+    switch (state) {
+        case 'INITIAL':
+            if (upperText.includes('GAME') || upperText.includes('YES') || upperText.includes('LIST')) {
+                appendLine("AVAILABLE GAMES:").then(() => {
+                    games.forEach((g, i) => appendLine(`  ${i + 1}. ${g}`));
+                    appendLine("<br>PLEASE CHOOSE A GAME NAME OR NUMBER:");
+                    state = 'SELECT_GAME';
+                });
+            } else {
+                appendLine("I'M SORRY, PROFESSOR. WOULD YOU LIKE TO SEE THE LIST OF GAMES?");
+            }
+            break;
+
+        case 'SELECT_GAME':
+            handleGameSelection(upperText);
+            break;
+
+        case 'GAME_MAZE': handleMazeInput(upperText); break;
+        case 'GAME_BJ': handleBlackjackInput(upperText); break;
+        case 'GAME_RUMMY': case 'GAME_HEARTS': case 'GAME_BRIDGE': case 'GAME_POKER':
+            handleCardSimInput(upperText); break;
+        case 'GAME_CHECKERS': case 'GAME_CHESS': handleBoardSimInput(upperText); break;
+        case 'GAME_WAR':
+            if (upperText === 'STOP') {
+                clearInterval(simInterval);
+                appendLine("WAR SIMULATION EMERGENCY CANCELLATION DETECTED.");
+                resetTerminal();
+            }
+            break;
     }
 }
+
+function cleanUpActiveLoops() {
+    if (simInterval) clearInterval(simInterval);
+    if (galagaLoop) cancelAnimationFrame(galagaLoop);
+    window.onkeydown = null;
+    window.onkeyup = null;
+}
+
+// --- SELECTING ROUTER PIPELINE ---
+function handleGameSelection(input) {
+    if (input.includes("MAZE") || input === "1") startMaze();
+    else if (input.includes("BLACK") || input === "2") startBlackjack();
+    else if (input.includes("GIN") || input === "3") startCardSim("GIN RUMMY", "GAME_RUMMY");
+    else if (input.includes("HEART") || input === "4") startCardSim("HEARTS", "GAME_HEARTS");
+    else if (input.includes("BRIDGE") || input === "5") startCardSim("BRIDGE", "GAME_BRIDGE");
+    else if (input.includes("CHECKER") || input === "6") startBoardSim("CHECKERS", "GAME_CHECKERS");
+    else if (input.includes("CHESS") || input === "7") startBoardSim("CHESS", "GAME_CHESS");
+    else if (input.includes("POKER") || input === "8") startCardSim("POKER", "GAME_POKER");
+    else if (input.includes("TIC") || input === "9") startTicTacToe();
+    else if (input.includes("WAR") || input.includes("GLOBAL") || input === "10") startGlobalWar();
+    else appendLine("UNKNOWN SELECTION. ACCESS DENIED FROM NORAD DATA BUFFER COMPARTMENT.");
+}
+
+// --- GAME 1: FALKEN'S MAZE ---
+function startMaze() {
+    state = 'GAME_MAZE';
+    gameData = { room: 1 };
+    appendLine("<br>INITIALIZING FALKEN'S MAZE ROUTINE v1.0...");
+    appendLine("YOU STAND IN A DARK CORRIDOR SUBTERRANEAN TO NORAD COMLINK UNIT.");
+    appendLine("AVAILABLE PATHS: 'NORTH' TO MAIN TERMINAL HOUSING, 'EAST' TO SECURITY DUMP.");
+}
+function handleMazeInput(action) {
+    if (gameData.room === 1) {
+        if (action === 'NORTH') {
+            gameData.room = 2;
+            appendLine("YOU INSIDE THE MAINFRAME ROOM. CHASSIS LIGHTS BLINK STEADILY.");
+            appendLine("A DESK SITS TO THE WEST containing a diary. 'WEST' OR GO BACK 'SOUTH'?");
+        } else if (action === 'EAST') {
+            appendLine("SECURITY GRATING BARRED FROM THE ROOM ENTRY WAY. CHOOSE ANOTHER ACCESS VECTOR.");
+        } else appendLine("COMMAND NOT COGNIZANT. OPTIONS: NORTH, EAST.");
+    } else if (gameData.room === 2) {
+        if (action === 'WEST') {
+            gameData.room = 2;
+            appendLine("YOU OPEN FALKEN'S DIARY. THE INSCRIPTION READS: 'THE WINNING MOVE IS NOT TO PLAY.'");
+            appendLine("MAZE CONCLUDED successfully. TRANSFERRING TERMINAL COMMAND LOGS OUT.");
+            endGame();
+        } else if (action === 'SOUTH') {
+            gameData.room = 1;
+            appendLine("RETURNING BACK TO DARK ENTRY CORRIDOR.");
+        } else appendLine("COMMAND REJECTED. ENTRY OPTIONS: WEST, SOUTH.");
+    }
+}
+
+// --- GAME 2: BLACKJACK ---
+function startBlackjack() {
+    state = 'GAME_BJ';
+    gameData = {
+        player: [getRandomCard(), getRandomCard()],
+        dealer: [getRandomCard(), getRandomCard()]
+    };
+    appendLine("<br>BLACKJACK PROTOCOL LOADED.");
+    displayBJStatus();
+}
+function getRandomCard() { return Math.floor(Math.random() * 10) + 2; }
+function calcHand(hand) { return hand.reduce((a,b) => a+b, 0); }
+function displayBJStatus() {
+    appendLine(`YOUR HAND VALUE: ${calcHand(gameData.player)}`);
+    appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer} (Hidden)`);
+    appendLine("ENTER COMMAND ACTION: 'HIT' OR 'STAND'");
+}
+function handleBlackjackInput(action) {
+    if (action === 'HIT') {
+        gameData.player.push(getRandomCard());
+        let pTotal = calcHand(gameData.player);
+        if (pTotal > 21) {
+            appendLine(`HAND VALUE CRASH: ${pTotal}. YOU BUSTED. W.O.P.R. WINS.`);
+            endGame();
+        } else {
+            displayBJStatus();
+        }
+    } else if (action === 'STAND') {
+        let dTotal = calcHand(gameData.dealer);
+        while (dTotal < 17) {
+            gameData.dealer.push(getRandomCard());
+            dTotal = calcHand(gameData.dealer);
+        }
+        let pTotal = calcHand(gameData.player);
+        appendLine(`FINAL DEALER COUNT: ${dTotal} | YOUR HAND COUNT: ${pTotal}`);
+        if (dTotal > 21 || pTotal > dTotal) {
+            appendLine("YOU WIN! STRATEGIC ANOMALY.");
+        } else if (dTotal === pTotal) {
+            appendLine("ROUND TIE. GAME IS A DRAW.");
+        } else {
+            appendLine("W.O.P.R. HAND DOMINATES. YOU LOSE.");
+        }
+        endGame();
+    } else {
+        appendLine("INVALID COMPILING KEYWORD. SUBMIT ACTION 'HIT' OR 'STAND'.");
+    }
+}
+
+// --- GAMES 3, 4, 5, 8: CARDS SIMULATOR BASE ---
+function startCardSim(title, targetState) {
+    state = targetState;
+    appendLine(`<br>ESTABLISHING SECURE CONNECTION CARD DECK PARSER FOR: ${title}`);
+    appendLine("DISTRIBUTING SYSTEM DATA PACKETS HAND GENERATORS...");
+    setTimeout(() => {
+        appendLine("DEALER COMPLETED. YOUR HAND REVEALS STRATEGIC METRICS:");
+        appendLine("  [ACE ♠] [JACK ♣] [KING ♦] [10 ♥] [7 ♠]");
+        appendLine("W.O.P.R. OFFERS CARD SHIFT SWAP SYSTEM EXCHANGE. ACTION OPTIONS: 'PLAY' OR 'FOLD'");
+    }, 400);
+}
+function handleCardSimInput(action) {
