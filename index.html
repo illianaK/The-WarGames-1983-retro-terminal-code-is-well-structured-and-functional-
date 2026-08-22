@@ -3,28 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>W.O.P.R. TERMINAL SYSTEM</title>
+    <title>W.O.P.R. Mainframe Terminal</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- CRT Screen Overlay Effects -->
-    <div class="crt-overlay"></div>
-    <div class="scanlines"></div>
-
-    <!-- Main Terminal Container -->
     <div class="terminal-container">
-        <!-- Scrollable Output Screen Box -->
-        <div id="screen" class="terminal-screen"></div>
-        
-        <!-- Interactive Input Interface Control -->
-        <div class="input-line">
+        <!-- CRT Monitor Effects -->
+        <div class="scanlines"></div>
+        <div class="crt-glow"></div>
+
+        <!-- Pure Text Output Console Screen -->
+        <div id="screen">
+            <div class="line system-msg">LOGON: WOPR / NORAD-CHEYENNE-MT</div>
+            <div class="line system-msg">SHALL WE PLAY A GAME?</div>
+        </div>
+
+        <!-- The Pure Command-Line Terminal Prompt -->
+        <div class="input-container">
             <span class="prompt">&gt;</span>
-            <input type="text" id="userInput" placeholder="ENTER COMMAND..." autofocus autocomplete="off">
-            <button id="sendBtn">EXECUTE</button>
+            <input type="text" id="userInput" autocomplete="off" autofocus>
         </div>
     </div>
-
-    <!-- Link your provided JavaScript source file here -->
     <script src="script.js"></script>
 </body>
 </html>
