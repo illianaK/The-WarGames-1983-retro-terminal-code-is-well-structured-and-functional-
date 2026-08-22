@@ -78,7 +78,7 @@ function appendLine(text, className = 'system-msg') {
                     index++;
                     sounds.print();
                     screen.scrollTop = screen.scrollHeight;
-                    setTimeout(typeChar, 15);
+                    setTimeout(typeChar, 10);
                 } else {
                     resolve();
                 }
@@ -101,17 +101,17 @@ function processInput() {
 
     const upperText = text.toUpperCase();
 
-    // Global intercept escape codes
+    // Global escape commands
     if (upperText === 'QUIT' || upperText === 'EXIT' || upperText === 'BYE') {
         cleanUpActiveLoops();
         resetTerminal();
         return;
     }
 
-    // Secret Easter Egg Gateway Injection Trigger!
-    if (upperText === 'GALAGA' || upperText === 'BOOM') {
+    // Secret Easter Egg Trigger
+    if (upperText === 'GALAGA') {
         cleanUpActiveLoops();
-        startGalagaSecretEgg();
+        startGalagaSecretEgg(1, 0, 3); // Stage 1, Score 0, 3 Lives
         return;
     }
 
@@ -143,9 +143,6 @@ function processInput() {
                 appendLine("WAR SIMULATION EMERGENCY CANCELLATION DETECTED.");
                 resetTerminal();
             }
-            break;
-        case 'GAME_GALAGA':
-            handleGalagaControlsInput(upperText);
             break;
     }
 }
@@ -215,7 +212,7 @@ function getRandomCard() { return Math.floor(Math.random() * 10) + 2; }
 function calcHand(hand) { return hand.reduce((a,b) => a+b, 0); }
 function displayBJStatus() {
     appendLine(`YOUR HAND VALUE: ${calcHand(gameData.player)}`);
-    appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer}`);
+    appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer[0]} (Hidden)`);
     appendLine("ENTER COMMAND ACTION: 'HIT' OR 'STAND'");
 }
 function handleBlackjackInput(action) {
@@ -241,7 +238,7 @@ function handleBlackjackInput(action) {
     } else appendLine("INVALID COMPILING KEYWORD. SUBMIT ACTION 'HIT' OR 'STAND'.");
 }
 
-// --- GAMES 3, 4, 5, 8: CARDS SIMULATOR BASE MACHINE ---
+// --- GAMES 3, 4, 5, 8: CARDS SIMULATOR BASE ---
 function startCardSim(title, targetState) {
     state = targetState;
     appendLine(`<br>ESTABLISHING SECURE CONNECTION CARD DECK PARSER FOR: ${title}`);
@@ -255,3 +252,5 @@ function startCardSim(title, targetState) {
 function handleCardSimInput(action) {
     if (action === 'PLAY' || action === 'BET') {
         if (Math.random() > 0.45) appendLine("SHOWDOWN LOGGED: YOUR HIGHER VALUES CONCLUDE VICTORY CONSTRAINTS.");
+        else appendLine("SHOWDOWN LOGGED: W.O.P.R MAINFRAME DETECTS WINNING FLUSH CONDITION.");
+        endGame();
