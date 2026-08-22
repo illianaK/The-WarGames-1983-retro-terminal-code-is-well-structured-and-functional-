@@ -149,7 +149,10 @@ function makeMove(idx, symbol) {
 function isBoardFull() { return tttBoard.every(c => c !== ''); }
 
 function checkWin(board, sym) {
-    const wins = [, [3, 4, 5], [6, 7, 8], // Horizontals, [1, 4, 7], [2, 5, 8], // Verticals, [2, 4, 6]             // Diagonals
+    const wins = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Horizontals
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Verticals
+        [0, 4, 8], [2, 4, 6]             // Diagonals
     ];
     return wins.some(p => p.every(i => board[i] === sym));
 }
