@@ -21,13 +21,69 @@ const games = [
     "GLOBAL THERMONUCLEAR WAR"
 ];
 
+// --- RETRO SOUND GENERATOR (Web Audio API) ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(freq, type, duration) {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = type;
+    osc.frequency.value = freq;
+    
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+const sounds = {
+    keystroke: () => playTone(600, 'square', 0.03),
+    systemPrint: () => playTone(800, 'sine', 0.02),
+    alert: () => {
+        playTone(400, 'sawtooth', 0.1);
+        setTimeout(() => playTone(300, 'sawtooth', 0.1), 120);
+    }
+};
+
+// --- RETRO TYPEWRITER PRINTER ---
 function appendLine(text, className = 'system-msg') {
-    const line = document.createElement('div');
-    line.className = `line ${className}`;
-    line.innerHTML = text;
-    screen.appendChild(line);
-    requestAnimationFrame(() => {
-        screen.scrollTop = screen.scrollHeight;
+    return new Promise((resolve) => {
+        const line = document.createElement('div');
+        line.className = `line ${className}`;
+        screen.appendChild(line);
+        
+        let isHTML = text.includes('<') && text.includes('>');
+        
+        if (isHTML || className === 'user-msg') {
+            line.innerHTML = text;
+            screen.scrollTop = screen.scrollHeight;
+            if (className !== 'user-msg') sounds.systemPrint();
+            resolve();
+        } else {
+            let index = 0;
+            const typingSpeed = 35;
+            
+            function typeChar() {
+                if (index < text.length) {
+                    line.textContent += text.charAt(index);
+                    index++;
+                    sounds.systemPrint();
+                    screen.scrollTop = screen.scrollHeight;
+                    setTimeout(typeChar, typingSpeed);
+                } else {
+                    resolve();
+                }
+            }
+            typeChar();
+        }
     });
 }
 
@@ -36,7 +92,8 @@ function processInput() {
     if (!text && state !== 'PLAYING_TTT') return;
 
     if (text) {
-        appendLine(`&gt; ${text}`, 'user-msg');
+        sounds.keystroke();
+        appendLine(`> ${text}`, 'user-msg');
         input.value = '';
     }
 
@@ -45,10 +102,11 @@ function processInput() {
     switch (state) {
         case 'INITIAL':
             if (upperText.includes('GAME') || upperText.includes('YES') || upperText.includes('LIST')) {
-                appendLine("AVAILABLE GAMES:");
-                games.forEach((g, i) => appendLine(`  ${i + 1}. ${g}`));
-                appendLine("<br>PLEASE CHOOSE A GAME:");
-                state = 'SELECT_GAME';
+                appendLine("AVAILABLE GAMES:").then(() => {
+                    games.forEach((g, i) => appendLine(`  ${i + 1}. ${g}`));
+                    appendLine("<br>PLEASE CHOOSE A GAME:");
+                    state = 'SELECT_GAME';
+                });
             } else {
                 appendLine("I'M SORRY, PROFESSOR. WOULD YOU LIKE TO SEE THE LIST OF GAMES?");
             }
@@ -60,8 +118,9 @@ function processInput() {
             } else if (upperText.includes('TIC') || upperText.includes('TAC') || upperText === '9') {
                 startTicTacToe();
             } else {
-                appendLine("THAT GAME IS CURRENTLY UNAVAILABLE DUE TO SYSTEM CONSTRAINTS.");
-                appendLine("PLEASE SELECT EITHER 'TIC-TAC-TOE' OR 'GLOBAL THERMONUCLEAR WAR'.");
+                appendLine("THAT GAME IS CURRENTLY UNAVAILABLE DUE TO SYSTEM CONSTRAINTS.").then(() => {
+                    appendLine("PLEASE SELECT EITHER 'TIC-TAC-TOE' OR 'GLOBAL THERMONUCLEAR WAR'.");
+                });
             }
             break;
 
@@ -83,6 +142,7 @@ function processInput() {
 
 function startGlobalWar() {
     state = 'SIMULATING_WAR';
+    sounds.alert();
     appendLine("<br><span class='defcon-warning'>--- INITIATING GLOBAL THERMONUCLEAR WAR SIMULATION ---</span>");
     appendLine("PRIMARY TARGET: UNITED STATES / USSR");
     appendLine("CALCULATING OPTIMAL TRAJECTORIES...");
@@ -95,7 +155,8 @@ function startGlobalWar() {
             let source = count % 2 === 0 ? "US ICBM" : "SOVIET SLBM";
             let target = targetCities[Math.floor(Math.random() * targetCities.length)];
             let casual = (Math.floor(Math.random() * 80) + 10) * 100000;
-            appendLine(`STRIKE DETECTED: ${source} -&gt; ${target} | CASUALTIES: ${casual.toLocaleString()}`, 'defcon-warning');
+            sounds.alert();
+            appendLine(`STRIKE DETECTED: ${source} -> ${target} | CASUALTIES: ${casual.toLocaleString()}`, 'defcon-warning');
             count++;
         } else {
             clearInterval(simInterval);
@@ -108,7 +169,7 @@ function startGlobalWar() {
                 state = 'SELECT_GAME';
             }, 2000);
         }
-    }, 800);
+    }, 1500);
 }
 
 function startTicTacToe() {
@@ -116,27 +177,28 @@ function startTicTacToe() {
     tttBoard = ['', '', '', '', '', '', '', '', ''];
     playerTurn = true;
 
-    appendLine("<br>INITIALIZING TIC-TAC-TOE...");
-    appendLine("CLICK A CELL ON THE BOARD TO PLACE 'X':");
+    appendLine("<br>INITIALIZING TIC-TAC-TOE...").then(() => {
+        appendLine("CLICK A CELL ON THE BOARD TO PLACE 'X':");
+        
+        const boardDiv = document.createElement('div');
+        boardDiv.className = 'board-container';
 
-    const boardDiv = document.createElement('div');
-    boardDiv.className = 'board-container';
+        const grid = document.createElement('div');
+        grid.className = 'tic-tac-toe';
 
-    const grid = document.createElement('div');
-    grid.className = 'tic-tac-toe';
+        for (let i = 0; i < 9; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.index = i;
+            cell.addEventListener('click', handleCellClick);
+            grid.appendChild(cell);
+        }
 
-    for (let i = 0; i < 9; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.index = i;
-        cell.addEventListener('click', handleCellClick);
-        grid.appendChild(cell);
-    }
-
-    boardDiv.appendChild(grid);
-    activeBoardElement = boardDiv;
-    screen.appendChild(boardDiv);
-    screen.scrollTop = screen.scrollHeight;
+        boardDiv.appendChild(grid);
+        activeBoardElement = boardDiv;
+        screen.appendChild(boardDiv);
+        screen.scrollTop = screen.scrollHeight;
+    });
 }
 
 function handleCellClick(e) {
@@ -145,6 +207,7 @@ function handleCellClick(e) {
     const index = e.target.dataset.index;
     if (tttBoard[index] !== '') return;
 
+    sounds.keystroke();
     makeMove(index, 'X');
 
     if (checkWin('X')) {
@@ -165,6 +228,7 @@ function handleCellClick(e) {
     setTimeout(() => {
         const aiMove = getBestMove();
         makeMove(aiMove, 'O');
+        sounds.keystroke();
 
         if (checkWin('O')) {
             appendLine("W.O.P.R. WINS.");
@@ -176,7 +240,7 @@ function handleCellClick(e) {
         } else {
             playerTurn = true;
         }
-    }, 500);
+    }, 800);
 }
 
 function makeMove(index, symbol) {
@@ -192,10 +256,9 @@ function isBoardFull() {
 }
 
 function checkWin(symbol) {
-    const winPatterns = [
-        [0,1,2], [3,4,5], [6,7,8],
-        [0,3,6], [1,4,7], [2,5,8],
-        [0,4,8], [2,4,6]
+    const winPatterns = [, [3,4,5], [6,7,8],
+, [1,4,7], [2,5,8],
+, [2,4,6]
     ];
     return winPatterns.some(pattern => {
         return pattern.every(index => tttBoard[index] === symbol);
@@ -238,42 +301,15 @@ input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') processInput();
 });
 
-// 1. Grab the elements from the HTML file
+// Original button code elements setup
 const button = document.getElementById('action-btn');
 const statusText = document.getElementById('status-text');
 const card = document.querySelector('.card');
 
-// 2. Listen for a click event to make them interact
-button.addEventListener('click', () => {
-    // Change the text content dynamically
-    statusText.textContent = "Awesome! Everything is working.";
-
-    // Add the CSS class to change the style dynamically
-    card.classList.add('success');
-    button.textContent = "Connected";
-
-    // Grab display metrics dynamically
-    const screenHeight = window.screen.height;
-    const screenWidth = window.screen.width;
-});
-
-
-// 1. Grab the elements from the HTML file
-const button = document.getElementById('action-btn');
-const statusText = document.getElementById('status-text');
-const card = document.querySelector('.card');
-
-// 2. Listen for a click event to make them interact
-button.addEventListener('click', () => {
-    // Change the text content dynamically
-    statusText.textContent = "Awesome! Everything is working.";
-
-    // Add the CSS class to change the style dynamically
-    card.classList.add('success');
-    button.textContent = "Connected";
- 
-  // Add the script js to change display dynamically
-const screenHeight = window.screen.height;
-const screenWidth = window.screen.width;
-  
-});
+if (button) {
+    button.addEventListener('click', () => {
+        statusText.textContent = "Awesome! Everything is working.";
+        card.classList.add('success');
+        button.textContent = "Connected";
+    });
+}
