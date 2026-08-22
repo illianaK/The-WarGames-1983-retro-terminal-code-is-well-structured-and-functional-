@@ -252,10 +252,8 @@ button.addEventListener('click', () => {
     card.classList.add('success');
     button.textContent = "Connected";
  
-  // Add the script js to change display dynamically 
-DisplayMetrics displayMetrics = new DisplayMetrics();
-getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-int screenHeight = displayMetrics.heightPixels;
-int screenWidth = displayMetrics.widthPixels;
+  // Add the script js to change display dynamically
+const screenHeight = window.screen.height;
+const screenWidth = window.screen.width;
   
 });
