@@ -236,11 +236,27 @@ function resetTerminal() {
 sendBtn.addEventListener('click', processInput);
 input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') processInput();
-}); // <-- Added ) here
+});
 
 // 1. Grab the elements from the HTML file
 const button = document.getElementById('action-btn');
+const statusText = document.getElementById('status-text');
+const card = document.querySelector('.card');
+
+// 2. Listen for a click event to make them interact
+button.addEventListener('click', () => {
+    // Change the text content dynamically
+    statusText.textContent = "Awesome! Everything is working.";
+
+    // Add the CSS class to change the style dynamically
+    card.classList.add('success');
+    button.textContent = "Connected";
+
+    // Grab display metrics dynamically
+    const screenHeight = window.screen.height;
+    const screenWidth = window.screen.width;
 });
+
 
 // 1. Grab the elements from the HTML file
 const button = document.getElementById('action-btn');
