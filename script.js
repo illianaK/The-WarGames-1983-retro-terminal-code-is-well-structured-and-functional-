@@ -1,7 +1,225 @@
+const screen = document.getElementById('screen');
+const input = document.getElementById('userInput');
+
+// Terminal State Tracker Machine
+let state = 'INITIAL';
+let simInterval = null;
+let galagaLoop = null;
+
+// Game Global Memory Buffers
+let gameData = {};
+let tttBoard = ['', '', '', '', '', '', '', '', ''];
+let playerTurn = true;
+let activeBoardElement = null;
+
+const games = [
+    "FALKEN'S MAZE",
+    "BLACK JACK",
+    "GIN RUMMY",
+    "HEARTS",
+    "BRIDGE",
+    "CHECKERS",
+    "CHESS",
+    "POKER",
+    "TIC-TAC-TOE",
+    "GLOBAL THERMONUCLEAR WAR"
+];
+
+// --- NATIVE BROWSER AUDIO MAIN SYNTH SYSTEM ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, type, duration) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+const sounds = {
+    click: () => playTone(650, 'square', 0.02),
+    print: () => playTone(850, 'sine', 0.015),
+    pew: () => playTone(880, 'sawtooth', 0.07),
+    enemyPew: () => playTone(440, 'sine', 0.06),
+    boom: () => playTone(140, 'sawtooth', 0.25),
+    hurt: () => {
+        playTone(200, 'triangle', 0.15);
+        setTimeout(() => playTone(150, 'triangle', 0.15), 100);
+    },
+    warn: () => {
+        playTone(480, 'sawtooth', 0.08);
+        setTimeout(() => playTone(360, 'sawtooth', 0.08), 90);
+    }
+};
+
+// --- CORE RETRO ASYNC TYPEWRITER PRINTER ---
+function appendLine(text, className = 'system-msg') {
+    return new Promise((resolve) => {
+        const line = document.createElement('div');
+        line.className = `line ${className}`;
+        screen.appendChild(line);
+        
+        if ((text.includes('<') && text.includes('>')) || className === 'user-msg') {
+            line.innerHTML = text;
+            screen.scrollTop = screen.scrollHeight;
+            if (className !== 'user-msg') sounds.print();
+            resolve();
+        } else {
+            let index = 0;
+            function typeChar() {
+                if (index < text.length) {
+                    line.textContent += text.charAt(index);
+                    index++;
+                    sounds.print();
+                    screen.scrollTop = screen.scrollHeight;
+                    setTimeout(typeChar, 10);
+                } else {
+                    resolve();
+                }
+            }
+            typeChar();
+        }
+    });
+}
+
+// --- TERMINAL COMMAND INPUT PROCESSOR ---
+function processInput() {
+    const text = input.value.trim();
+    if (!text && state !== 'GAME_TTT') return;
+
+    if (text) {
+        sounds.click();
+        appendLine(`> ${text}`, 'user-msg');
+        input.value = '';
+    }
+
+    const upperText = text.toUpperCase();
+
+    // Global escape commands
+    if (upperText === 'QUIT' || upperText === 'EXIT' || upperText === 'BYE') {
+        cleanUpActiveLoops();
+        resetTerminal();
+        return;
+    }
+
+    // Secret Easter Egg Trigger
+    if (upperText === 'GALAGA') {
+        cleanUpActiveLoops();
+        startGalagaSecretEgg(1, 0, 3);
+        return;
+    }
+
+    switch (state) {
+        case 'INITIAL':
+            if (upperText.includes('GAME') || upperText.includes('YES') || upperText.includes('LIST')) {
+                appendLine("AVAILABLE GAMES:").then(() => {
+                    games.forEach((g, i) => appendLine(`  ${i + 1}. ${g}`));
+                    appendLine("<br>PLEASE CHOOSE A GAME NAME OR NUMBER:");
+                    state = 'SELECT_GAME';
+                });
+            } else {
+                appendLine("I'M SORRY, PROFESSOR. WOULD YOU LIKE TO SEE THE LIST OF GAMES?");
+            }
+            break;
+
+        case 'SELECT_GAME':
+            handleGameSelection(upperText);
+            break;
+
+        case 'GAME_MAZE': handleMazeInput(upperText); break;
+        case 'GAME_BJ': handleBlackjackInput(upperText); break;
+        case 'GAME_RUMMY': case 'GAME_HEARTS': case 'GAME_BRIDGE': case 'GAME_POKER':
+            handleCardSimInput(upperText); break;
+        case 'GAME_CHECKERS': case 'GAME_CHESS': handleBoardSimInput(upperText); break;
+        case 'GAME_WAR':
+            if (upperText === 'STOP') {
+                clearInterval(simInterval);
+                appendLine("WAR SIMULATION EMERGENCY CANCELLATION DETECTED.");
+                resetTerminal();
+            }
+            break;
+    }
+}
+
+function cleanUpActiveLoops() {
+    if (simInterval) clearInterval(simInterval);
+    if (galagaLoop) cancelAnimationFrame(galagaLoop);
+    window.onkeydown = null;
+    window.onkeyup = null;
+}
+
+// --- SELECTING ROUTER PIPELINE ---
+function handleGameSelection(input) {
+    if (input.includes("MAZE") || input === "1") startMaze();
+    else if (input.includes("BLACK") || input === "2") startBlackjack();
+    else if (input.includes("GIN") || input === "3") startCardSim("GIN RUMMY", "GAME_RUMMY");
+    else if (input.includes("HEART") || input === "4") startCardSim("HEARTS", "GAME_HEARTS");
+    else if (input.includes("BRIDGE") || input === "5") startCardSim("BRIDGE", "GAME_BRIDGE");
+    else if (input.includes("CHECKER") || input === "6") startBoardSim("CHECKERS", "GAME_CHECKERS");
+    else if (input.includes("CHESS") || input === "7") startBoardSim("CHESS", "GAME_CHESS");
+    else if (input.includes("POKER") || input === "8") startCardSim("POKER", "GAME_POKER");
+    else if (input.includes("TIC") || input === "9") startTicTacToe();
+    else if (input.includes("WAR") || input.includes("GLOBAL") || input === "10") startGlobalWar();
+    else appendLine("UNKNOWN SELECTION. ACCESS DENIED FROM NORAD DATA BUFFER COMPARTMENT.");
+}
+
+// --- GAME 1: FALKEN'S MAZE ---
+function startMaze() {
+    state = 'GAME_MAZE';
+    gameData = { room: 1 };
+    appendLine("<br>INITIALIZING FALKEN'S MAZE ROUTINE v1.0...");
+    appendLine("YOU STAND IN A DARK CORRIDOR SUBTERRANEAN TO NORAD COMLINK UNIT.");
+    appendLine("AVAILABLE PATHS: 'NORTH' TO MAIN TERMINAL HOUSING, 'EAST' TO SECURITY DUMP.");
+}
+function handleMazeInput(action) {
+    if (gameData.room === 1) {
+        if (action === 'NORTH') {
+            gameData.room = 2;
+            appendLine("YOU INSIDE THE MAINFRAME ROOM. CHASSIS LIGHTS BLINK STEADILY.");
+            appendLine("A DESK SITS TO THE WEST containing a diary. 'WEST' OR GO BACK 'SOUTH'?");
+        } else if (action === 'EAST') {
+            appendLine("SECURITY GRATING BARRED FROM THE ROOM ENTRY WAY. CHOOSE ANOTHER ACCESS VECTOR.");
+        } else appendLine("COMMAND NOT COGNIZANT. OPTIONS: NORTH, EAST.");
+    } else if (gameData.room === 2) {
+        if (action === 'WEST') {
+            appendLine("YOU OPEN FALKEN'S DIARY. THE INSCRIPTION READS: 'THE WINNING MOVE IS NOT TO PLAY.'");
+            appendLine("MAZE CONCLUDED successfully. TRANSFERRING TERMINAL COMMAND LOGS OUT.");
+            endGame();
+        } else if (action === 'SOUTH') {
+            gameData.room = 1;
+            appendLine("RETURNING BACK TO DARK ENTRY CORRIDOR.");
+        } else appendLine("COMMAND REJECTED. ENTRY OPTIONS: WEST, SOUTH.");
+    }
+}
+
+// --- GAME 2: BLACKJACK ---
+function startBlackjack() {
+    state = 'GAME_BJ';
+    gameData = {
+        player: [getRandomCard(), getRandomCard()],
+        dealer: [getRandomCard(), getRandomCard()]
+    };
+    appendLine("<br>BLACKJACK PROTOCOL LOADED.");
+    displayBJStatus();
+}
+function getRandomCard() { return Math.floor(Math.random() * 10) + 2; }
+function calcHand(hand) { return hand.reduce((a,b) => a+b, 0); }
+function displayBJStatus() {
+    appendLine(`YOUR HAND VALUE: ${calcHand(gameData.player)}`);
+    appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer[0]} (Hidden)`);
+    appendLine("ENTER COMMAND ACTION: 'HIT' OR 'STAND'");
+}
+function handleBlackjackInput(action) {
+    if (action === 'HIT') {
+        gameData.player.push(getRandomCard());
         let pTotal = calcHand(gameData.player);
         if (pTotal > 21) {
-            appendLine(`YOUR HAND VALUE: ${pTotal}`);
-            appendLine("YOU BUSTED! W.O.P.R. WINS BY DEFAULT PIPELINE NETWORKS.");
+            appendLine(`HAND VALUE CRASH: ${pTotal}. YOU BUSTED. W.O.P.R. WINS.`);
             endGame();
         } else {
             displayBJStatus();
@@ -13,271 +231,32 @@
             dTotal = calcHand(gameData.dealer);
         }
         let pTotal = calcHand(gameData.player);
-        appendLine(`FINAL STANDINGS — YOUR HAND: ${pTotal} | W.O.P.R. HAND: ${dTotal}`);
+        appendLine(`FINAL DEALER COUNT: ${dTotal} | YOUR HAND COUNT: ${pTotal}`);
         if (dTotal > 21 || pTotal > dTotal) {
-            appendLine("PROFESSOR WINS THE VECTOR MATCHUP.");
-        } else if (pTotal < dTotal) {
-            appendLine("W.O.P.R. SUPERIOR ALGORITHM PREVAILS.");
+            appendLine("YOU WIN! STRATEGIC ANOMALY.");
+        } else if (dTotal === pTotal) {
+            appendLine("ROUND TIE. GAME IS A DRAW.");
         } else {
-            appendLine("MATCH DETERMINED A DRAW TIED MATRIX.");
+            appendLine("W.O.P.R. HAND DOMINATES. YOU LOSE.");
         }
         endGame();
     } else {
-        appendLine("INVALID SPECIFICATION. CHOOSE: 'HIT' OR 'STAND'");
+        appendLine("INVALID COMPILING KEYWORD. SUBMIT ACTION 'HIT' OR 'STAND'.");
     }
 }
 
-// --- GAMES 3, 4, 5, 8: SIMULATED CARD GAMES ---
-function startCardSim(name, gameState) {
-    state = gameState;
-    appendLine(`<br>INITIALIZING ${name} ENGINE MATRIX...`);
-    appendLine("DISTRIBUTING DATA BUFFERS AND SHUFFLING PACKETS...");
+// --- GAMES 3, 4, 5, 8: CARDS SIMULATOR BASE ---
+function startCardSim(title, targetState) {
+    state = targetState;
+    appendLine(`<br>ESTABLISHING SECURE CONNECTION CARD DECK PARSER FOR: ${title}`);
+    appendLine("DISTRIBUTING SYSTEM DATA PACKETS HAND GENERATORS...");
     setTimeout(() => {
-        appendLine("DEALING COMPLETE. COMPUTING OPTIMAL GAME TREES...");
-        setTimeout(() => {
-            appendLine("W.O.P.R. DETERMINES COMBINATORIAL PROBABILITY IS A DEADLOCK.");
-            appendLine("GAME INTERRUPTED BY AUTOMATED ADVERSARIAL DISMISSAL.");
-            endGame();
-        }, 1500);
-    }, 1000);
+        appendLine("DEALER COMPLETED. YOUR HAND REVEALS STRATEGIC METRICS:");
+        appendLine("  [ACE ♠] [JACK ♣] [KING ♦] [10 ♥] [7 ♠]");
+        appendLine("W.O.P.R. OFFERS CARD SHIFT SWAP SYSTEM EXCHANGE. ACTION OPTIONS: 'PLAY' OR 'FOLD'");
+    }, 400);
 }
 function handleCardSimInput(action) {
-    appendLine("SIMULATOR PROCESSING INTERRUPTED. COMMAND BUFFER LOCKED.");
-}
-
-// --- GAMES 6, 7: SIMULATED BOARD GAMES ---
-function startBoardSim(name, gameState) {
-    state = gameState;
-    appendLine(`<br>LOADING ${name} ENGINE REGISTER SECTOR...`);
-    appendLine("GRID SCHEMATICS COGENT. READY FOR INPUT MOVES.");
-    appendLine("PLEASE INPUT AN ALPHANUMERIC VECTOR TO COMMENCE (e.g., E2E4):");
-}
-function handleBoardSimInput(action) {
-    if (!action) return;
-    appendLine(`CALCULATING COUNTER-RESPONSE TO MOVE: ${action}...`);
-    setTimeout(() => {
-        sounds.warn();
-        appendLine("W.O.P.R. ANALYZING POSITION...");
-        appendLine("STRATEGIC OUTCOMES EQUAL ZERO VARIANCE.");
-        appendLine("MATCH TERMINATED PERMUTATION INCONCLUSIVE.");
-        endGame();
-    }, 1200);
-}
-
-// --- GAME 9: TIC-TAC-TOE (THE KEY PARADIGM SHIFT) ---
-function startTicTacToe() {
-    state = 'GAME_TTT';
-    tttBoard = ['', '', '', '', '', '', '', '', ''];
-    playerTurn = true;
-    
-    appendLine("<br>INITIALIZING TIC-TAC-TOE SUBSYSTEM COMPARTMENT...");
-    
-    // Create UI matrix container
-    activeBoardElement = document.createElement('div');
-    activeBoardElement.className = 'ttt-grid-container';
-    activeBoardElement.style.display = 'grid';
-    activeBoardElement.style.gridTemplateColumns = 'repeat(3, 80px)';
-    activeBoardElement.style.gap = '8px';
-    activeBoardElement.style.margin = '15px 0';
-    
-    for (let i = 0; i < 9; i++) {
-        const cell = document.createElement('button');
-        cell.className = 'ttt-cell';
-        cell.dataset.index = i;
-        cell.style.height = '80px';
-        cell.style.background = '#001100';
-        cell.style.border = '2px solid #00ff00';
-        cell.style.color = '#00ff00';
-        cell.style.fontFamily = 'monospace';
-        cell.style.fontSize = '24px';
-        cell.style.cursor = 'pointer';
-        cell.onclick = () => handleTTTCellClick(i);
-        activeBoardElement.appendChild(cell);
-    }
-    
-    screen.appendChild(activeBoardElement);
-    appendLine("SELECT ANY GRID MATRIX CELL POSITION TO INITIALIZE VECTOR MOVEMENT.");
-}
-
-function handleTTTCellClick(index) {
-    if (state !== 'GAME_TTT' || !playerTurn || tttBoard[index] !== '') return;
-    
-    sounds.click();
-    tttBoard[index] = 'X';
-    updateTTTUI();
-    
-    if (checkTTTWin('X')) {
-        appendLine("IMPOSSIBLE ANOMALY! PROFESSOR WINS INTERFACE MATRIX.");
-        endGame();
-        return;
-    }
-    
-    if (!tttBoard.includes('')) {
-        appendLine("A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.");
-        endGame();
-        return;
-    }
-    
-    playerTurn = false;
-    appendLine("W.O.P.R. COMPUTING COUNTER-INTERSECTION VECTOR...");
-    
-    setTimeout(() => {
-        makeWOPRTTTMove();
-    }, 600);
-}
-
-function makeWOPRTTTMove() {
-    // 1. Can WOPR win right now?
-    let move = findWinningTTTIndex('O');
-    // 2. Block user from winning
-    if (move === -1) move = findWinningTTTIndex('X');
-    // 3. Fallback to random empty slot
-    if (move === -1) {
-        const empties = tttBoard.map((c, i) => c === '' ? i : null).filter(v => v !== null);
-        move = empties[Math.floor(Math.random() * empties.length)];
-    }
-    
-    tttBoard[move] = 'O';
-    updateTTTUI();
-    sounds.warn();
-    
-    if (checkTTTWin('O')) {
-        appendLine("W.O.P.R. COGNIZANT SYSTEM WINS THE CELL SECTOR.");
-        endGame();
-        return;
-    }
-    
-    if (!tttBoard.includes('')) {
-        appendLine("DRAW PARADIGM ENCOUNTERED. THE WINNING MOVE IS NOT TO PLAY.");
-        endGame();
-        return;
-    }
-    
-    playerTurn = true;
-}
-
-function findWinningTTTIndex(player) {
-    const winConditions = [, [3, 4, 5], [6, 7, 8],
-, [1, 4, 7], [2, 5, 8],
-, [2, 4, 6]
-    ];
-    for (let condition of winConditions) {
-        const [a, b, c] = condition;
-        if (tttBoard[a] === player && tttBoard[b] === player && tttBoard[c] === '') return c;
-        if (tttBoard[a] === player && tttBoard[c] === player && tttBoard[b] === '') return b;
-        if (tttBoard[b] === player && tttBoard[c] === player && tttBoard[a] === '') return a;
-    }
-    return -1;
-}
-
-function checkTTTWin(player) {
-    const winConditions = [, [3, 4, 5], [6, 7, 8],
-, [1, 4, 7], [2, 5, 8],
-, [2, 4, 6]
-    ];
-    return winConditions.some(comb => comb.every(idx => tttBoard[idx] === player));
-}
-
-function updateTTTUI() {
-    if (!activeBoardElement) return;
-    const cells = activeBoardElement.getElementsByClassName('ttt-cell');
-    for (let i = 0; i < cells.length; i++) {
-        cells[i].textContent = tttBoard[i];
-        if (tttBoard[i] !== '') {
-            cells[i].style.background = '#002200';
-            cells[i].style.cursor = 'default';
-        }
-    }
-}
-
-// --- GAME 10: GLOBAL THERMONUCLEAR WAR ---
-function startGlobalWar() {
-    state = 'GAME_WAR';
-    appendLine("<br>🚨 WARNING: DEFCON STATUS ESCALATING REDUCED MARGINS 🚨");
-    appendLine("LAUNCH CODE INTERFACE SEQUENCING COMMENCING.");
-    appendLine("SIMULATING FIRST STRIKE TRAJECTORIES. TYPE 'STOP' TO CANCEL INTERFACE ARRANGEMENT.");
-    
-    let cycles = 0;
-    const targets = ["MOSCOW", "WASHINGTON DC", "LONDON", "PARIS", "BEIJING", "NORAD SITE"];
-    
-    simInterval = setInterval(() => {
-        sounds.warn();
-        const tgt = targets[Math.floor(Math.random() * targets.length)];
-        const casualties = Math.floor(Math.random() * 50) + 10;
-        appendLine(`ICBM TRACK VECTOR INBOUND TO --> ${tgt}. ESTIMATED LOSSES: ${casualties} MILLION.`);
-        cycles++;
-        
-        if (cycles >= 8) {
-            clearInterval(simInterval);
-            sounds.boom();
-            appendLine("<br>💥 SIMULATION COMPLETE. GLOBAL LOSS LEVEL: TOTAL SURRENDER ARTIFACT.");
-            appendLine("STRATEGIC CONCLUSION: A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.");
-            endGame();
-        }
-    }, 1500);
-}
-
-// --- SECRET EASTER EGG GAME ROUTINE: CHROME ARCHITECTURE GALAGA ENGINE ---
-function startGalagaSecretEgg(stage, score, lives) {
-    state = 'SECRET_GALAGA';
-    appendLine(`<br>👾 CRACKING CORE SUB-NORAD DATA SECTOR: GALAGA LOADER v0.4 👾`);
-    appendLine(`STAGE: ${stage} | MEMORY SCORE CACHE: ${score} | LIVES LEFT: ${lives}`);
-    
-    // Construct inline HTML5 display architecture
-    const canvasWrap = document.createElement('div');
-    canvasWrap.style.margin = '15px 0';
-    canvasWrap.style.textAlign = 'center';
-    
-    const cvs = document.createElement('canvas');
-    cvs.id = 'galagaCanvas';
-    cvs.width = 360;
-    cvs.height = 400;
-    cvs.style.border = '3px double #00ff00';
-    cvs.style.background = '#000000';
-    canvasWrap.appendChild(cvs);
-    screen.appendChild(canvasWrap);
-    
-    const ctx = cvs.getContext('2d');
-    
-    // Game state tracking variables
-    let playerX = cvs.width / 2;
-    const playerY = cvs.height - 30;
-    const playerWidth = 24;
-    const playerHeight = 16;
-    let keys = {};
-    
-    let projectiles = [];
-    let enemyProjectiles = [];
-    let enemies = [];
-    
-    // Construct Grid Matrix for Invading Entities
-    const rows = 3 + stage;
-    const cols = 6;
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            enemies.push({
-                x: 40 + c * 45,
-                y: 40 + r * 30,
-                w: 20,
-                h: 14,
-                dir: 1,
-                speed: 1 + (stage * 0.2),
-                type: r === 0 ? 'commander' : (r === 1 ? 'red' : 'blue')
-            });
-        }
-    }
-    
-    // Capture Global Key Listener Streams
-    window.onkeydown = (e) => { keys[e.code] = true; if (e.code === 'Space' || e.code === 'ArrowUp') e.preventDefault(); };
-    window.onkeyup = (e) => { keys[e.code] = false; };
-    
-    let lastShot = 0;
-    
-    function runLoop() {
-        if (state !== 'SECRET_GALAGA') return;
-        
-        // 1. Process Movements
-        if (keys['ArrowLeft'] || keys['KeyA']) playerX = Math.max(playerWidth / 2, playerX - 4);
-        if (keys['ArrowRight'] || keys['KeyD']) playerX = Math.min(cvs.width - playerWidth / 2, playerX + 4);
-        
-        if ((keys['Space'] || keys['ArrowUp']) && Date.now() - lastShot > 250) {
+    if (action === 'PLAY' || action === 'BET') {
+        if (Math.random() > 0.45) appendLine("SHOWDOWN LOGGED: YOUR HIGHER VALUES CONCLUDE VICTORY CONSTRAINTS.");
+        else appendLine("SHOWDOWN LOGGED: W.O.P.R MAINFRAME DETECTS WINNING FLUSH CONDITION.");
