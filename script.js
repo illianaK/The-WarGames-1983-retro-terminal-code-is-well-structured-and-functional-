@@ -4,7 +4,6 @@ const input = document.getElementById('userInput');
 // Terminal State Tracker Machine
 let state = 'INITIAL';
 let simInterval = null;
-let galagaLoop = null;
 
 // Game Global Memory Buffers
 let gameData = {};
@@ -44,13 +43,6 @@ function playTone(freq, type, duration) {
 const sounds = {
     click: () => playTone(650, 'square', 0.02),
     print: () => playTone(850, 'sine', 0.015),
-    pew: () => playTone(880, 'sawtooth', 0.07),
-    enemyPew: () => playTone(440, 'sine', 0.06),
-    boom: () => playTone(140, 'sawtooth', 0.25),
-    hurt: () => {
-        playTone(200, 'triangle', 0.15);
-        setTimeout(() => playTone(150, 'triangle', 0.15), 100);
-    },
     warn: () => {
         playTone(480, 'sawtooth', 0.08);
         setTimeout(() => playTone(360, 'sawtooth', 0.08), 90);
@@ -64,12 +56,12 @@ function appendLine(text, className = 'system-msg') {
         line.className = `line ${className}`;
         screen.appendChild(line);
 
-        // Utility to cleanly force standard scroll to bottom
         const scrollToBottom = () => {
             screen.scrollTop = screen.scrollHeight;
         };
 
-        if ((text.includes('<') && text.includes('>')) || className === 'user-msg') {
+        // FIXED: Safely formats explicit HTML wrapper components (like tables or grid wraps) without throwing inner tag codes on screen
+        if (text.startsWith('<div') || text.startsWith('<br') || className === 'user-msg') {
             line.innerHTML = text;
             scrollToBottom();
             if (className !== 'user-msg') sounds.print();
@@ -81,7 +73,7 @@ function appendLine(text, className = 'system-msg') {
                     line.textContent += text.charAt(index);
                     index++;
                     sounds.print();
-                    scrollToBottom(); // Locks terminal bottom anchoring per character print
+                    scrollToBottom();
                     setTimeout(typeChar, 10);
                 } else {
                     scrollToBottom();
@@ -106,17 +98,9 @@ function processInput() {
 
     const upperText = text.toUpperCase();
 
-    // Global escape commands
     if (upperText === 'QUIT' || upperText === 'EXIT' || upperText === 'BYE') {
         cleanUpActiveLoops();
         resetTerminal();
-        return;
-    }
-
-    // Secret Easter Egg Trigger
-    if (upperText === 'GALAGA') {
-        cleanUpActiveLoops();
-        startGalagaSecretEgg(1, 0, 3);
         return;
     }
 
@@ -142,11 +126,14 @@ function processInput() {
         case 'GAME_RUMMY': case 'GAME_HEARTS': case 'GAME_BRIDGE': case 'GAME_POKER':
             handleCardSimInput(upperText); break;
         case 'GAME_CHECKERS': case 'GAME_CHESS': handleBoardSimInput(upperText); break;
+        case 'GAME_TTT':
+            handleTicTacToeInput(upperText);
+            break;
         case 'GAME_WAR':
-            if (upperText === 'STOP') {
-                clearInterval(simInterval);
+            if (upperText === 'STOP' || upperText === 'CANCEL') {
+                cleanUpActiveLoops();
                 appendLine("WAR SIMULATION EMERGENCY CANCELLATION DETECTED.");
-                resetTerminal();
+                endGame();
             }
             break;
     }
@@ -154,9 +141,7 @@ function processInput() {
 
 function cleanUpActiveLoops() {
     if (simInterval) clearInterval(simInterval);
-    if (galagaLoop) cancelAnimationFrame(galagaLoop);
-    window.onkeydown = null;
-    window.onkeyup = null;
+    activeBoardElement = null;
 }
 
 // --- SELECTING ROUTER PIPELINE ---
@@ -193,7 +178,6 @@ function handleMazeInput(action) {
         } else appendLine("COMMAND NOT COGNIZANT. OPTIONS: NORTH, EAST.");
     } else if (gameData.room === 2) {
         if (action === 'WEST') {
-            gameData.room = 2;
             appendLine("YOU OPEN FALKEN'S DIARY. THE INSCRIPTION READS: 'THE WINNING MOVE IS NOT TO PLAY.'");
             appendLine("MAZE CONCLUDED successfully. TRANSFERRING TERMINAL COMMAND LOGS OUT.");
             endGame();
@@ -218,7 +202,7 @@ function getRandomCard() { return Math.floor(Math.random() * 10) + 2; }
 function calcHand(hand) { return hand.reduce((a,b) => a+b, 0); }
 function displayBJStatus() {
     appendLine(`YOUR HAND VALUE: ${calcHand(gameData.player)}`);
-    appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer} (Hidden)`);
+    appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer[0]} (Hidden)`);
     appendLine("ENTER COMMAND ACTION: 'HIT' OR 'STAND'");
 }
 function handleBlackjackInput(action) {
@@ -264,3 +248,11 @@ function startCardSim(title, targetState) {
     }, 400);
 }
 function handleCardSimInput(action) {
+    if (action === 'PLAY' || action === 'BET') {
+        if (Math.random() > 0.45) appendLine("SHOWDOWN LOGGED: YOUR HIGHER VALUES CONCLUDE VICTORY CONSTRAINTS.");
+        else appendLine("SHOWDOWN LOGGED: W.O.P.R MAINFRAME DETECTS WINNING FLUSH CONDITION.");
+        endGame();
+    } else if (action === 'FOLD') {
+        appendLine("HAND FORFEITED TO W.O.P.R. BANKING SYSTEM.");
+        endGame();
+    } else {
