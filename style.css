@@ -90,7 +90,6 @@ body {
     caret-color: #33ff33;
 }
 
-/* Interactive board bounds update */
 .board-container {
     margin: 8px 0;
     background: #000000;
@@ -119,7 +118,6 @@ body {
     cursor: pointer;
 }
 
-/* Screen overlay filters */
 .scanlines {
     pointer-events: none;
     position: absolute;
