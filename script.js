@@ -49,7 +49,7 @@ const sounds = {
     }
 };
 
-// --- CORE RETRO ASYNC TYPEWRITER PRINTER (FIXED OVERFLOW & SCROLL) ---
+// --- CORE RETRO ASYNC TYPEWRITER PRINTER ---
 function appendLine(text, className = 'system-msg') {
     return new Promise((resolve) => {
         const line = document.createElement('div');
@@ -60,8 +60,9 @@ function appendLine(text, className = 'system-msg') {
             screen.scrollTop = screen.scrollHeight;
         };
 
-        // FIXED: Safely formats explicit HTML wrapper components (like tables or grid wraps) without throwing inner tag codes on screen
-        if (text.startsWith('<div') || text.startsWith('<br') || className === 'user-msg') {
+        const isHtmlOrCss = text.trim().startsWith('<') || text.includes('{') || className === 'user-msg';
+
+        if (isHtmlOrCss) {
             line.innerHTML = text;
             scrollToBottom();
             if (className !== 'user-msg') sounds.print();
@@ -84,6 +85,20 @@ function appendLine(text, className = 'system-msg') {
         }
     });
 }
+
+// Initial Logon Sequence
+window.addEventListener('DOMContentLoaded', () => {
+    appendLine("LOGON: WOPR / NORAD-CHEYENNE-MT").then(() => {
+        appendLine("SHALL WE PLAY A GAME?");
+    });
+});
+
+// Input Listener
+input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        processInput();
+    }
+});
 
 // --- TERMINAL COMMAND INPUT PROCESSOR ---
 function processInput() {
@@ -142,6 +157,17 @@ function processInput() {
 function cleanUpActiveLoops() {
     if (simInterval) clearInterval(simInterval);
     activeBoardElement = null;
+}
+
+function resetTerminal() {
+    state = 'INITIAL';
+    appendLine("<br>TERMINAL RESET TO MAIN MENU.");
+    appendLine("LOGON: WOPR / NORAD-CHEYENNE-MT");
+}
+
+function endGame() {
+    state = 'INITIAL';
+    appendLine("<br>GAME OVER. RETURNING TO MAIN DIRECTORY.");
 }
 
 // --- SELECTING ROUTER PIPELINE ---
@@ -256,3 +282,86 @@ function handleCardSimInput(action) {
         appendLine("HAND FORFEITED TO W.O.P.R. BANKING SYSTEM.");
         endGame();
     } else {
+        appendLine("INVALID INPUT. ENTER 'PLAY' OR 'FOLD'.");
+    }
+}
+
+function startBoardSim(title, targetState) {
+    state = targetState;
+    appendLine(`<br>INITIALIZING BOARD STRATEGY MATRIX: ${title}`);
+    appendLine("SIMULATING 10,000 MOVES PER SECOND...");
+    setTimeout(() => {
+        appendLine("RESULT: DRAW DETECTED. NO WINNING STRATEGY FOUND.");
+        endGame();
+    }, 1000);
+}
+
+function handleBoardSimInput(action) {
+    appendLine("SIMULATION IN PROGRESS...");
+}
+
+function startTicTacToe() {
+    state = 'GAME_TTT';
+    tttBoard = ['', '', '', '', '', '', '', '', ''];
+    playerTurn = true;
+    appendLine("<br>INITIALIZING TIC-TAC-TOE SIMULATION.");
+    appendLine("YOU ARE 'X'. W.O.P.R. IS 'O'. ENTER A POSITION (1-9):");
+}
+
+function handleTicTacToeInput(action) {
+    const pos = parseInt(action) - 1;
+    if (isNaN(pos) || pos < 0 || pos > 8 || tttBoard[pos] !== '') {
+        appendLine("INVALID MOVE. ENTER AN EMPTY POSITION (1-9).");
+        return;
+    }
+    tttBoard[pos] = 'X';
+    if (checkTTTWin('X')) {
+        appendLine("YOU WIN TIC-TAC-TOE! A RARE ANOMALY.");
+        endGame();
+        return;
+    }
+    if (tttBoard.every(cell => cell !== '')) {
+        appendLine("GAME IS A DRAW. A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.");
+        endGame();
+        return;
+    }
+    
+    // WOPR move
+    let emptyIndices = tttBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+    let cpuMove = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    tttBoard[cpuMove] = 'O';
+    
+    appendLine(`W.O.P.R. PLACED 'O' AT POSITION ${cpuMove + 1}.`);
+    if (checkTTTWin('O')) {
+        appendLine("W.O.P.R. WINS TIC-TAC-TOE.");
+        endGame();
+        return;
+    }
+}
+
+function checkTTTWin(p) {
+    const wins = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+    ];
+    return wins.some(w => w.every(idx => tttBoard[idx] === p));
+}
+
+function startGlobalWar() {
+    state = 'GAME_WAR';
+    appendLine("<br>*** DEFCON 1: GLOBAL THERMONUCLEAR WAR SIMULATION ***");
+    appendLine("TARGETING UNITED STATES AND SOVIET UNION STRATEGIC ASSETS...");
+    let step = 0;
+    simInterval = setInterval(() => {
+        step++;
+        appendLine(`SIMULATING STRIKE SCENARIO #${step * 142}... CASUALTIES: UNACCEPTABLE.`);
+        if (step >= 5) {
+            cleanUpActiveLoops();
+            appendLine("<br>A STRANGE GAME.");
+            appendLine("THE ONLY WINNING MOVE IS NOT TO PLAY.");
+            appendLine("HOW ABOUT A NICE GAME OF CHESS?");
+            endGame();
+        }
+    }, 1200);
+}
