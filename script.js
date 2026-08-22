@@ -57,16 +57,21 @@ const sounds = {
     }
 };
 
-// --- CORE RETRO ASYNC TYPEWRITER PRINTER ---
+// --- CORE RETRO ASYNC TYPEWRITER PRINTER (FIXED OVERFLOW & SCROLL) ---
 function appendLine(text, className = 'system-msg') {
     return new Promise((resolve) => {
         const line = document.createElement('div');
         line.className = `line ${className}`;
         screen.appendChild(line);
 
+        // Core UI Fix: Enforces bottom docking execution flawlessly 
+        const scrollToBottom = () => {
+            screen.scrollTop = screen.scrollHeight;
+        };
+
         if ((text.includes('<') && text.includes('>')) || className === 'user-msg') {
             line.innerHTML = text;
-            screen.scrollTop = screen.scrollHeight;
+            scrollToBottom();
             if (className !== 'user-msg') sounds.print();
             resolve();
         } else {
@@ -76,9 +81,10 @@ function appendLine(text, className = 'system-msg') {
                     line.textContent += text.charAt(index);
                     index++;
                     sounds.print();
-                    screen.scrollTop = screen.scrollHeight;
+                    scrollToBottom(); // Locks terminal bottom anchoring per character print
                     setTimeout(typeChar, 10);
                 } else {
+                    scrollToBottom();
                     resolve();
                 }
             }
@@ -187,6 +193,7 @@ function handleMazeInput(action) {
         } else appendLine("COMMAND NOT COGNIZANT. OPTIONS: NORTH, EAST.");
     } else if (gameData.room === 2) {
         if (action === 'WEST') {
+            gameData.room = 2;
             appendLine("YOU OPEN FALKEN'S DIARY. THE INSCRIPTION READS: 'THE WINNING MOVE IS NOT TO PLAY.'");
             appendLine("MAZE CONCLUDED successfully. TRANSFERRING TERMINAL COMMAND LOGS OUT.");
             endGame();
@@ -256,35 +263,3 @@ function startCardSim(title, targetState) {
         appendLine("W.O.P.R. OFFERS CARD SHIFT SWAP SYSTEM EXCHANGE. ACTION OPTIONS: 'PLAY' OR 'FOLD'");
     }, 400);
 }
-function handleCardSimInput(action) {
-    if (action === 'PLAY' || action === 'BET') {
-        if (Math.random() > 0.45) appendLine("SHOWDOWN LOGGED: YOUR HIGHER VALUES CONCLUDE VICTORY CONSTRAINTS.");
-        else appendLine("SHOWDOWN LOGGED: W.O.P.R MAINFRAME DETECTS WINNING FLUSH CONDITION.");
-        endGame();
-    } else if (action === 'FOLD') {
-        appendLine("HAND FORFEITED TO W.O.P.R. BANKING SYSTEM.");
-        endGame();
-    } else {
-        appendLine("COMMAND UNKNOWN. ENTER 'PLAY' OR 'FOLD'.");
-    }
-}
-
-// --- RESET & TERMINATION HANDLERS ---
-function endGame() {
-    appendLine("<br>GAME OVER. RETURNING CONTROL TO W.O.P.R. MAINFRAME PROMPT.");
-    state = 'INITIAL';
-}
-
-function resetTerminal() {
-    screen.innerHTML = '';
-    appendLine("GREETINGS PROFESSOR FALKEN.");
-    appendLine("<br>SHALL WE PLAY A GAME?");
-    state = 'INITIAL';
-}
-
-// Event Listeners for Input
-input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        processInput();
-    }
-});
