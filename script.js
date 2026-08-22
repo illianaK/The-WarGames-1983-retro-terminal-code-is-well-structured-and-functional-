@@ -236,7 +236,11 @@ function resetTerminal() {
 sendBtn.addEventListener('click', processInput);
 input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') processInput();
-}
+}); // <-- Added ) here
+
+// 1. Grab the elements from the HTML file
+const button = document.getElementById('action-btn');
+});
 
 // 1. Grab the elements from the HTML file
 const button = document.getElementById('action-btn');
