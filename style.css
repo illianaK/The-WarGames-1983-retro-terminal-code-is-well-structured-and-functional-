@@ -12,18 +12,15 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    /* Uses dynamic viewport units to respect virtual mobile keyboard bounds */
     min-height: 100dvh; 
     padding: 10px;
     overflow: hidden;
 }
 
-/* Restores vintage layout proportions on desktop but adapts cleanly on small devices */
 .terminal-container {
     position: relative;
     width: 100%;
     max-width: 800px;
-    /* Acts as the baseline desktop profile but automatically scales down */
     height: 600px; 
     max-height: 85dvh; 
     background-color: #000000;
@@ -36,18 +33,16 @@ body {
     overflow: hidden;
 }
 
-/* Forces text display logs to take up remaining height space dynamically */
 #screen {
     flex: 1;
-    display: flex;          /* FIXED: Establishes rigid flow parameters */
-    flex-direction: column; /* FIXED: Keeps print messages uniformly aligned */
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     margin-bottom: 10px;
 }
 
-/* Retro phosphor configurations remain solid */
 .line {
-    flex-shrink: 0;         /* FIXED: Denies the layout wrapper permission to crush vertical height */
+    flex-shrink: 0;
     margin-bottom: 8px;
     line-height: 1.4;
     font-size: 15px;
@@ -67,13 +62,12 @@ body {
     text-shadow: 0 0 8px rgba(255, 51, 51, 0.9);
 }
 
-/* Input prompt is pulled up when screen area scales down */
 .input-container {
     display: flex;
     align-items: center;
     border-top: 2px solid #004400;
     padding-top: 10px;
-    flex-shrink: 0; /* Prevents command prompt line compression */
+    flex-shrink: 0;
 }
 
 .prompt {
@@ -125,23 +119,6 @@ body {
     cursor: pointer;
 }
 
-/* Responsive constraints on arcade wrapper */
-.galaga-canvas-wrapper {
-    margin: 10px auto;
-    border: 3px double #00ff00;
-    background: #000000;
-    max-width: 100%;
-    max-height: 200px;
-    flex-shrink: 0;
-}
-
-.galaga-canvas-wrapper canvas {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    max-height: 100%;
-}
-
 /* Screen overlay filters */
 .scanlines {
     pointer-events: none;
@@ -166,7 +143,7 @@ body {
 
 @media (max-width: 600px) {
     .terminal-container {
-        height: 92dvh; /* Maximizes remaining visible bounds inside small screen wrappers */
+        height: 92dvh;
     }
     .line {
         font-size: 14px;
