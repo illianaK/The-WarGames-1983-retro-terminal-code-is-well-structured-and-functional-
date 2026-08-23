@@ -66,9 +66,23 @@ body {
 .terminal-screen::-webkit-scrollbar {
     width: 6px;
 }
-.terminal-screen::-webkit-scrollbar-thumb {
-    background: #1a5e1a;
-    border-radius: 3px;
+/* Fixed height scrolling container */
+.terminal-screen {
+    height: 400px; /* Adjust this value (e.g., 500px or 60vh) to match your preferred height */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 10px;
+    scroll-behavior: smooth;
+}
+
+/* Retains line heights and whitespace for ASCII/text alignment */
+.line {
+    line-height: 1.25;
+    text-shadow: 0 0 5px rgba(51, 255, 51, 0.7);
+    word-break: break-word;
+    white-space: pre-wrap; 
 }
 
 /* Text Line Variants */
