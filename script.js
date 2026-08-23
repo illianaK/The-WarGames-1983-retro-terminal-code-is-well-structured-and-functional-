@@ -1,4 +1,4 @@
-const screen = document.getElementById('screen');
+const screen = document.getElementById('terminalScreen') || document.getElementById('screen');
 const input = document.getElementById('userInput');
 
 // Terminal State Tracker Machine
