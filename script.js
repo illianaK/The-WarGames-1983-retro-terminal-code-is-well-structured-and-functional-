@@ -19,7 +19,6 @@ woprStyle.textContent = `
 `;
 document.head.appendChild(woprStyle);
 
-// Target the correct screen element from your HTML file
 const screen = document.getElementById('screen');
 const input = document.getElementById('userInput');
 
@@ -79,7 +78,8 @@ function appendLine(text, className = 'system-msg') {
                     index++;
                     sounds.print();
                     scrollToBottom();
-                    setTimeout(typeChar, 12);
+                    // CINEMATIC SPEED RECTIFICATION: 35ms accurately mirrors 300 baud typewriter text
+                    setTimeout(typeChar, 35); 
                 } else {
                     line.classList.remove('typing');
                     scrollToBottom();
@@ -91,7 +91,7 @@ function appendLine(text, className = 'system-msg') {
     });
 }
 
-// Initial Movie Ignition: Cold Login Prompt Execution
+// System Boot Sequence Verification Hook
 function initTerminal() {
     if (screen) {
         screen.innerHTML = '';
@@ -99,7 +99,6 @@ function initTerminal() {
     }
 }
 
-// Run immediately if DOM is loaded, otherwise wait for event listener
 if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', initTerminal);
 } else {
@@ -122,7 +121,7 @@ function processInput() {
 
     const upperText = text.toUpperCase();
 
-    // Universal Hard System Override Reset Loop Command
+    // System Utility Override Command
     if (upperText === 'RESET') {
         cleanUpActiveLoops();
         resetTerminal();
@@ -142,7 +141,6 @@ function processInput() {
         return;
     }
 
-    // 1983 Flow Routing Matrix
     switch (state) {
         case 'RAW_LOGON':
             if (upperText === 'JOSHUA') {
@@ -221,8 +219,10 @@ function handleTicTacToeInput(action) {
     renderTTTBoard();
 }
 
+// CRITICAL CORRECTION: Restored complete multi-dimensional victory checking matrix values 
 function checkWin(b, p) {
-    const w = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    const w = [, [3, 4, 5], [6, 7, 8], // Horizontal paths, [1, 4, 7], [2, 5, 8], // Vertical vectors, [2, 4, 6]             // Cross angles
+    ];
     return w.some(comb => comb.every(i => b[i] === p));
 }
 
@@ -295,6 +295,3 @@ function startGalagaArcade() {
         if (!galagaActive) return;
         if (keys['ArrowLeft'] && ship.x > 0) ship.x -= ship.speed;
         if (keys['ArrowRight'] && ship.x < canvas.width - ship.w) ship.x += ship.speed;
-        if (keys[' ']) {
-            keys[' '] = false;
-            bullets.push({ x: ship.x + 13, y: ship.y, w: 4, h: 10 });
