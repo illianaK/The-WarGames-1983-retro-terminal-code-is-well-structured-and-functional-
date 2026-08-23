@@ -19,6 +19,7 @@ woprStyle.textContent = `
 `;
 document.head.appendChild(woprStyle);
 
+// Target the correct screen element from your HTML file
 const screen = document.getElementById('screen');
 const input = document.getElementById('userInput');
 
@@ -90,10 +91,20 @@ function appendLine(text, className = 'system-msg') {
     });
 }
 
-// Initial Movie Ignition: Cold Login Prompt
-window.addEventListener('DOMContentLoaded', () => {
-    appendLine("LOGON: ");
-});
+// Initial Movie Ignition: Cold Login Prompt Execution
+function initTerminal() {
+    if (screen) {
+        screen.innerHTML = '';
+        appendLine("LOGON: ");
+    }
+}
+
+// Run immediately if DOM is loaded, otherwise wait for event listener
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initTerminal);
+} else {
+    initTerminal();
+}
 
 input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') processInput();
@@ -111,7 +122,7 @@ function processInput() {
 
     const upperText = text.toUpperCase();
 
-    // TARGETED UPGRADE: Universal Hard System Override Reset Loop Command
+    // Universal Hard System Override Reset Loop Command
     if (upperText === 'RESET') {
         cleanUpActiveLoops();
         resetTerminal();
@@ -131,7 +142,7 @@ function processInput() {
         return;
     }
 
-    // 1983 Flow Routing Matrix (Purged of Help Games menu paths)
+    // 1983 Flow Routing Matrix
     switch (state) {
         case 'RAW_LOGON':
             if (upperText === 'JOSHUA') {
@@ -158,7 +169,6 @@ function processInput() {
                         appendLine(steps[count++]);
                         sounds.warn();
                     } else {
-                        // Keeps buffer frozen upon simulation conclusion rather than clearing automatically
                         clearInterval(simInterval);
                         appendLine("<br>CORE WAITING ON INPUT OPERATIONS CHANNELS.");
                     }
@@ -288,8 +298,3 @@ function startGalagaArcade() {
         if (keys[' ']) {
             keys[' '] = false;
             bullets.push({ x: ship.x + 13, y: ship.y, w: 4, h: 10 });
-            playTone(900, 'square', 0.05);
-        }
-
-        bullets.forEach((b, bi) => { b.y -= 6; if(b.y < 0) bullets.splice(bi, 1); });
-
