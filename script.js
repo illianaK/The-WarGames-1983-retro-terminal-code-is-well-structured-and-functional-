@@ -26,6 +26,14 @@ const games = [
 
 // --- NATIVE BROWSER AUDIO MAIN SYNTH SYSTEM ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// Auto-resume AudioContext on first user interaction to bypass browser autoplay policies
+document.addEventListener('click', () => {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}, { once: true });
+
 function playTone(freq, type, duration) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
@@ -60,7 +68,8 @@ function appendLine(text, className = 'system-msg') {
             screen.scrollTop = screen.scrollHeight;
         };
 
-        const isHtmlOrCss = text.trim().startsWith('<') || text.includes('{') || className === 'user-msg';
+        // FIXED: Refined check to prevent plain strings with '{' from bypassing typewriter typing
+        const isHtmlOrCss = text.trim().startsWith('<') || className === 'user-msg';
 
         if (isHtmlOrCss) {
             line.innerHTML = text;
@@ -95,6 +104,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Input Listener
 input.addEventListener('keydown', (e) => {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     if (e.key === 'Enter') {
         processInput();
     }
@@ -193,6 +203,7 @@ function startMaze() {
     appendLine("YOU STAND IN A DARK CORRIDOR SUBTERRANEAN TO NORAD COMLINK UNIT.");
     appendLine("AVAILABLE PATHS: 'NORTH' TO MAIN TERMINAL HOUSING, 'EAST' TO SECURITY DUMP.");
 }
+
 function handleMazeInput(action) {
     if (gameData.room === 1) {
         if (action === 'NORTH') {
@@ -224,13 +235,16 @@ function startBlackjack() {
     appendLine("<br>BLACKJACK PROTOCOL LOADED.");
     displayBJStatus();
 }
+
 function getRandomCard() { return Math.floor(Math.random() * 10) + 2; }
 function calcHand(hand) { return hand.reduce((a,b) => a+b, 0); }
+
 function displayBJStatus() {
     appendLine(`YOUR HAND VALUE: ${calcHand(gameData.player)}`);
     appendLine(`W.O.P.R. SHOWING VALUE: ${gameData.dealer[0]} (Hidden)`);
     appendLine("ENTER COMMAND ACTION: 'HIT' OR 'STAND'");
 }
+
 function handleBlackjackInput(action) {
     if (action === 'HIT') {
         gameData.player.push(getRandomCard());
@@ -273,6 +287,7 @@ function startCardSim(title, targetState) {
         appendLine("W.O.P.R. OFFERS CARD SHIFT SWAP SYSTEM EXCHANGE. ACTION OPTIONS: 'PLAY' OR 'FOLD'");
     }, 400);
 }
+
 function handleCardSimInput(action) {
     if (action === 'PLAY' || action === 'BET') {
         if (Math.random() > 0.45) appendLine("SHOWDOWN LOGGED: YOUR HIGHER VALUES CONCLUDE VICTORY CONSTRAINTS.");
@@ -300,6 +315,7 @@ function handleBoardSimInput(action) {
     appendLine("SIMULATION IN PROGRESS...");
 }
 
+// --- GAME 9: TIC-TAC-TOE ---
 function startTicTacToe() {
     state = 'GAME_TTT';
     tttBoard = ['', '', '', '', '', '', '', '', ''];
@@ -314,28 +330,37 @@ function handleTicTacToeInput(action) {
         appendLine("INVALID MOVE. ENTER AN EMPTY POSITION (1-9).");
         return;
     }
+    
     tttBoard[pos] = 'X';
+    
     if (checkTTTWin('X')) {
         appendLine("YOU WIN TIC-TAC-TOE! A RARE ANOMALY.");
         endGame();
         return;
     }
+    
     if (tttBoard.every(cell => cell !== '')) {
         appendLine("GAME IS A DRAW. A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.");
         endGame();
         return;
     }
-    
-    // WOPR move
+
+    // FIXED: Ensured empty space exists before executing CPU array query
     let emptyIndices = tttBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
     let cpuMove = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
     tttBoard[cpuMove] = 'O';
-    
+
     appendLine(`W.O.P.R. PLACED 'O' AT POSITION ${cpuMove + 1}.`);
+    
     if (checkTTTWin('O')) {
         appendLine("W.O.P.R. WINS TIC-TAC-TOE.");
         endGame();
         return;
+    }
+
+    if (tttBoard.every(cell => cell !== '')) {
+        appendLine("GAME IS A DRAW. A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.");
+        endGame();
     }
 }
 
@@ -348,6 +373,7 @@ function checkTTTWin(p) {
     return wins.some(w => w.every(idx => tttBoard[idx] === p));
 }
 
+// --- GAME 10: GLOBAL THERMONUCLEAR WAR ---
 function startGlobalWar() {
     state = 'GAME_WAR';
     appendLine("<br>*** DEFCON 1: GLOBAL THERMONUCLEAR WAR SIMULATION ***");
