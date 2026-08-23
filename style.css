@@ -1,6 +1,6 @@
 :root {
-    --glow-color: #00ffff; /* Updated to true terminal Cyan */
-    --bg-color: #001a1a;   /* Deep Cyan tint backdrop */
+    --glow-color: #00ffff; /* True terminal Cyan */
+    --bg-color: #001a1a;   /* Deep Cyan backdrop */
 }
 
 * {
@@ -143,6 +143,7 @@ input[type="text"] {
     cursor: pointer;
     background: rgba(0, 255, 255, 0.05);
     transition: background 0.2s;
+    line-height: 60px; /* Fix vertical alignment */
 }
 
 .ttt-cell:hover {
