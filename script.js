@@ -61,7 +61,8 @@ const sounds = {
 function appendLine(text, className = 'system-msg') {
     return new Promise((resolve) => {
         const line = document.createElement('div');
-        line.className = `line ${className}`;
+        // Added 'typing' class for CSS cursor block effect during character readout
+        line.className = `line ${className} typing`;
         screen.appendChild(line);
 
         const scrollToBottom = () => {
@@ -72,6 +73,7 @@ function appendLine(text, className = 'system-msg') {
 
         if (isHtmlOrCss) {
             line.innerHTML = text;
+            line.classList.remove('typing'); // Remove cursor block on HTML output
             scrollToBottom();
             if (className !== 'user-msg') sounds.print();
             resolve();
@@ -85,6 +87,7 @@ function appendLine(text, className = 'system-msg') {
                     scrollToBottom();
                     setTimeout(typeChar, 10);
                 } else {
+                    line.classList.remove('typing'); // Remove cursor block when line typing finishes
                     scrollToBottom();
                     resolve();
                 }
@@ -457,7 +460,7 @@ function handleGalagaInput(action) {
     if (action === 'FIRE' || action === 'SHOOT' || action === 'F') {
         sounds.print();
         const hit = Math.random() > 0.3;
-        
+
         if (hit) {
             gameData.aliens--;
             gameData.score += 100 * gameData.stage;
@@ -470,7 +473,7 @@ function handleGalagaInput(action) {
             sounds.warn();
             gameData.shipsRemaining--;
             appendLine(`⚠️ WARNING! ALIEN TRACTOR BEAM / DIVE BOMB HIT YOUR FIGHTER! Ships remaining: ${gameData.shipsRemaining}`);
-            
+
             if (gameData.shipsRemaining <= 0) {
                 appendLine("<br>GAME OVER - FIGHTER FLEET DESTROYED.");
                 appendLine(`FINAL SCORE: ${gameData.score}`);
