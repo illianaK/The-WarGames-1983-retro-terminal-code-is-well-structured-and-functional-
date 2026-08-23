@@ -1,7 +1,7 @@
-// --- AUTO-INJECT CRT CYAN STYLING INTO DOM ---
+// --- FILM-ACCURATE CYAN STYLING ENGINE ---
 const woprStyle = document.createElement('style');
 woprStyle.textContent = `
-    #screen, .line, .system-msg, .user-msg, #userInput {
+    #screen, .line, .system-msg, .user-msg, #userInput, .prompt {
         color: #00d0ff !important;
         text-shadow: 0 0 5px #00d0ff, 0 0 10px #0088ff !important;
     }
@@ -9,41 +9,29 @@ woprStyle.textContent = `
         background-color: #00d0ff !important;
         box-shadow: 0 0 8px #00d0ff !important;
     }
+    canvas#galagaCanvas {
+        border: 2px solid #005f87;
+        background: #000;
+        display: block;
+        margin: 10px auto;
+        box-shadow: 0 0 15px rgba(0, 208, 255, 0.4);
+    }
 `;
 document.head.appendChild(woprStyle);
 
-// Targeted fix: Explicitly binding to the correct HTML ID element
 const screen = document.getElementById('screen');
 const input = document.getElementById('userInput');
 
-// Terminal State Tracker Machine
-let state = 'INITIAL';
+// Terminal State Control Machine
+let state = 'RAW_LOGON'; 
 let simInterval = null;
-
-// Game Global Memory Buffers
-let gameData = {};
 let tttBoard = ['', '', '', '', '', '', '', '', ''];
+let galagaActive = false;
 
-const games = [
-    "FALKEN'S MAZE",
-    "BLACK JACK",
-    "GIN RUMMY",
-    "HEARTS",
-    "BRIDGE",
-    "CHECKERS",
-    "CHESS",
-    "POKER",
-    "TIC-TAC-TOE",
-    "GLOBAL THERMONUCLEAR WAR"
-];
-
-// --- NATIVE BROWSER AUDIO MAIN SYNTH SYSTEM ---
+// Native Browser Audio Synth Architecture
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
 document.addEventListener('click', () => {
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
 }, { once: true });
 
 function playTone(freq, type, duration) {
@@ -52,7 +40,7 @@ function playTone(freq, type, duration) {
     const gain = audioCtx.createGain();
     osc.type = type;
     osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
@@ -62,27 +50,21 @@ function playTone(freq, type, duration) {
 
 const sounds = {
     click: () => playTone(650, 'square', 0.02),
-    print: () => playTone(850, 'sine', 0.015),
+    print: () => playTone(850, 'sine', 0.01),
     warn: () => {
         playTone(480, 'sawtooth', 0.08);
         setTimeout(() => playTone(360, 'sawtooth', 0.08), 90);
     }
 };
 
-// --- CORE RETRO ASYNC TYPEWRITER PRINTER ---
 function appendLine(text, className = 'system-msg') {
     return new Promise((resolve) => {
         const line = document.createElement('div');
         line.className = `line ${className} typing`;
         screen.appendChild(line);
 
-        const scrollToBottom = () => {
-            screen.scrollTop = screen.scrollHeight;
-        };
-
-        const isHtmlOrCss = text.trim().startsWith('<') || className === 'user-msg';
-
-        if (isHtmlOrCss) {
+        const scrollToBottom = () => { screen.scrollTop = screen.scrollHeight; };
+        if (text.trim().startsWith('<') || className === 'user-msg') {
             line.innerHTML = text;
             line.classList.remove('typing');
             scrollToBottom();
@@ -96,7 +78,7 @@ function appendLine(text, className = 'system-msg') {
                     index++;
                     sounds.print();
                     scrollToBottom();
-                    setTimeout(typeChar, 10);
+                    setTimeout(typeChar, 12);
                 } else {
                     line.classList.remove('typing');
                     scrollToBottom();
@@ -108,32 +90,40 @@ function appendLine(text, className = 'system-msg') {
     });
 }
 
-// Initial Logon Sequence Trigger
+// Initial Movie Ignition: Cold Login Prompt
 window.addEventListener('DOMContentLoaded', () => {
-    appendLine("LOGON: WOPR / NORAD-CHEYENNE-MT").then(() => {
-        appendLine("SHALL WE PLAY A GAME?");
-    });
+    appendLine("LOGON: ");
 });
 
-// Input Listener
 input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        processInput();
-    }
+    if (e.key === 'Enter') processInput();
 });
 
-// --- TERMINAL COMMAND INPUT PROCESSOR ---
 function processInput() {
     const text = input.value.trim();
     if (!text && state !== 'GAME_TTT') return;
 
     if (text) {
         sounds.click();
-        appendLine(`> ${text}`, 'user-msg');
+        appendLine(text, 'user-msg');
         input.value = '';
     }
 
     const upperText = text.toUpperCase();
+
+    // TARGETED UPGRADE: Universal Hard System Override Reset Loop Command
+    if (upperText === 'RESET') {
+        cleanUpActiveLoops();
+        resetTerminal();
+        return;
+    }
+
+    // Secret Global Arcade Overwrite
+    if (upperText === 'GALAGA') {
+        cleanUpActiveLoops();
+        startGalagaArcade();
+        return;
+    }
 
     if (['QUIT', 'EXIT', 'BYE'].includes(upperText)) {
         cleanUpActiveLoops();
@@ -141,109 +131,165 @@ function processInput() {
         return;
     }
 
+    // 1983 Flow Routing Matrix (Purged of Help Games menu paths)
     switch (state) {
-        case 'INITIAL':
-            if (upperText.includes('GAME') || upperText.includes('YES') || upperText.includes('LIST')) {
-                appendLine("AVAILABLE GAMES:").then(() => {
-                    games.forEach((g, i) => appendLine(`  ${i + 1}. ${g}`));
-                    appendLine("<br>PLEASE CHOOSE A GAME NAME OR NUMBER:");
-                    state = 'SELECT_GAME';
-                });
+        case 'RAW_LOGON':
+            if (upperText === 'JOSHUA') {
+                state = 'GREETINGS';
+                appendLine("<br>GREETINGS, PROFESSOR FALKEN.<br><br>HOW ARE YOU FEELING TODAY?");
             } else {
-                appendLine("I'M SORRY, PROFESSOR. WOULD YOU LIKE TO SEE THE LIST OF GAMES?");
+                appendLine("IDENTIFICATION REJECTED BY SYSTEM SECURITY MATRIX.<br><br>LOGON: ");
             }
             break;
 
-        case 'SELECT_GAME':
-            handleGameSelection(upperText);
+        case 'GREETINGS':
+            state = 'GAME_PROMPT';
+            appendLine("<br>EXCELLENT. SHALL WE PLAY A GAME?");
             break;
 
-        case 'GAME_MAZE': 
-            handleMazeInput(upperText); 
-            break;
-            
-        case 'GAME_SIM':
-            if (upperText === 'STOP' || upperText === 'CANCEL') {
-                cleanUpActiveLoops();
-                appendLine("WAR SIMULATION EMERGENCY CANCELLATION DETECTED.");
-                endGame();
+        case 'GAME_PROMPT':
+            if (upperText.includes("THERMONUCLEAR") || upperText === "10") {
+                state = 'GAME_SIM';
+                appendLine("<br>LOGGING INTO STRATEGIC COMMAND WARPING ARRAYS...");
+                let steps = ["PRIME TARGET SECTOR IDENTIFICATION...", "LOADING BALLISTIC TRAJECTORY SCHEMATICS...", "A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY."];
+                let count = 0;
+                simInterval = setInterval(() => {
+                    if (count < steps.length) {
+                        appendLine(steps[count++]);
+                        sounds.warn();
+                    } else {
+                        // Keeps buffer frozen upon simulation conclusion rather than clearing automatically
+                        clearInterval(simInterval);
+                        appendLine("<br>CORE WAITING ON INPUT OPERATIONS CHANNELS.");
+                    }
+                }, 2000);
+            } else if (upperText.includes("TIC") || upperText === "9") {
+                state = 'GAME_TTT';
+                tttBoard = ['', '', '', '', '', '', '', '', ''];
+                renderTTTBoard();
+            } else {
+                appendLine("CHOOSE TRACKING INDEX DIRECTIVE: GLOBAL THERMONUCLEAR WAR");
             }
+            break;
+
+        case 'GAME_TTT':
+            handleTicTacToeInput(upperText);
             break;
     }
 }
 
-function cleanUpActiveLoops() {
-    if (simInterval) clearInterval(simInterval);
+// --- UNBEATABLE MINIMAX CALCULATOR ---
+function renderTTTBoard() {
+    let html = "<br>---+---+---<br>";
+    for (let i = 0; i < 9; i += 3) {
+        html += ` ${tttBoard[i] || (i+1)} | ${tttBoard[i+1] || (i+2)} | ${tttBoard[i+2] || (i+3)} <br>---+---+---<br>`;
+    }
+    html += "<br>SELECT VACANT CELL CHANNELS (1-9):";
+    appendLine(html);
 }
 
-function resetTerminal() {
-    state = 'INITIAL';
-    screen.innerHTML = '';
-    appendLine("LOGON: WOPR / NORAD-CHEYENNE-MT").then(() => {
-        appendLine("SHALL WE PLAY A GAME?");
-    });
+function handleTicTacToeInput(action) {
+    let idx = parseInt(action) - 1;
+    if (isNaN(idx) || idx < 0 || idx > 8 || tttBoard[idx] !== '') {
+        appendLine("VAL REJECTED. SELECT AN OPEN MATRIX NODE.");
+        return;
+    }
+    
+    tttBoard[idx] = 'X';
+    if (checkWin(tttBoard, 'X')) { return; }
+    if (tttBoard.every(c => c !== '')) { appendLine("DRAW GAME. THE ONLY WINNING MOVE IS NOT TO PLAY."); return; }
+
+    let bestMove = minimax(tttBoard, 'O').index;
+    tttBoard[bestMove] = 'O';
+
+    if (checkWin(tttBoard, 'O')) {
+        renderTTTBoard();
+        appendLine("JOSHUA WINS. OPERATIONAL VECTOR TERMINATED.");
+        return;
+    }
+    if (tttBoard.every(c => c !== '')) { appendLine("DRAW GAME. THE ONLY WINNING MOVE IS NOT TO PLAY."); return; }
+    renderTTTBoard();
 }
 
-function endGame() {
-    state = 'INITIAL';
-    appendLine("<br>GAME OVER. RETURNING TO MAIN DIRECTORY.");
+function checkWin(b, p) {
+    const w = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    return w.some(comb => comb.every(i => b[i] === p));
 }
 
-function handleGameSelection(inputVal) {
-    if (inputVal.includes("MAZE") || inputVal === "1") {
-        state = 'GAME_MAZE';
-        gameData = { room: 1 };
-        appendLine("<br>INITIALIZING FALKEN'S MAZE ROUTINE v1.0...");
-        appendLine("YOU STAND IN A DARK CORRIDOR SUBTERRANEAN TO NORAD COMLINK UNIT.");
-        appendLine("AVAILABLE PATHS: 'NORTH' TO MAIN TERMINAL HOUSING, 'EAST' TO SECURITY DUMP.");
-    } else if (inputVal.includes("WAR") || inputVal.includes("THERMONUCLEAR") || inputVal === "10") {
-        state = 'GAME_SIM';
-        appendLine("<br>LOGGING INTO STRATEGIC COMMAND DEFENSE SYSTEM...");
-        let steps = ["PRIME TARGET: SEATTLE", "PRIME TARGET: MOSCOW", "LAUNCH CODES TRACKING...", "SIMULATING TRAJECTORIES..."];
-        let counter = 0;
-        simInterval = setInterval(() => {
-            if (counter < steps.length) {
-                appendLine(steps[counter++]);
-                sounds.warn();
-            } else {
-                appendLine("<br>A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.");
-                cleanUpActiveLoops();
-                endGame();
-            }
-        }, 1500);
+function minimax(newBoard, player) {
+    let availSpots = newBoard.map((c, i) => c === '' ? i : null).filter(v => v !== null);
+    if (checkWin(newBoard, 'X')) return { score: -10 };
+    if (checkWin(newBoard, 'O')) return { score: 10 };
+    if (availSpots.length === 0) return { score: 0 };
+
+    let moves = [];
+    for (let i = 0; i < availSpots.length; i++) {
+        let move = {};
+        move.index = availSpots[i];
+        newBoard[availSpots[i]] = player;
+        if (player === 'O') {
+            let result = minimax(newBoard, 'X');
+            move.score = result.score;
+        } else {
+            let result = minimax(newBoard, 'O');
+            move.score = result.score;
+        }
+        newBoard[availSpots[i]] = '';
+        moves.push(move);
+    }
+
+    let bestMove;
+    if (player === 'O') {
+        let bestScore = -10000;
+        for (let i = 0; i < moves.length; i++) {
+            if (moves[i].score > bestScore) { bestScore = moves[i].score; bestMove = i; }
+        }
     } else {
-        state = 'GAME_SIM';
-        appendLine(`<br>RUNNING SIMULATION MODULE SYSTEM MATRIX...`);
-        simInterval = setInterval(() => {
-            appendLine("PROCESSING TRAFFIC INTERRUPT VECTOR...");
-        }, 2000);
+        let bestScore = 10000;
+        for (let i = 0; i < moves.length; i++) {
+            if (moves[i].score < bestScore) { bestScore = moves[i].score; bestMove = i; }
+        }
     }
+    return moves[bestMove];
 }
 
-// Fixed and completed Maze loop syntax
-function handleMazeInput(action) {
-    if (gameData.room === 1) {
-        if (action === 'NORTH') {
-            gameData.room = 2;
-            appendLine("YOU ARE INSIDE THE MAINFRAME ROOM. CHASSIS LIGHTS BLINK STEADILY.");
-            appendLine("A DESK SITS TO THE WEST CONTAINING A DIARY. TYPE 'WEST' OR GO BACK 'SOUTH'?");
-        } else if (action === 'EAST') {
-            sounds.warn();
-            appendLine("SECURITY COMPARTMENT ACCESS REJECTED. ALARM ACTIVATED.");
-            endGame();
-        } else {
-            appendLine("INVALID PATH VECTOR.");
-        }
-    } else if (gameData.room === 2) {
-        if (action === 'WEST') {
-            appendLine("YOU OPEN THE DIARY. IT READS: 'THE ONLY WINNING MOVE IS NOT TO PLAY.'");
-            appendLine("SYSTEM SOLVED. YOU WIN!");
-            endGame();
-        } else if (action === 'SOUTH') {
-            gameData.room = 1;
-            appendLine("RETURNING TO STARTING CORRIDOR. PATHS: 'NORTH' OR 'EAST'.");
-        } else {
-            appendLine("UNKNOWN INPUT DIRECTION.");
+// --- FUNCTIONAL GALAGA CANVAS EASTER EGG ---
+function startGalagaArcade() {
+    galagaActive = true;
+    appendLine("<br>INIT: HIGH-TRAFFIC VECTOR INTERRUPT DETECTED...<br>");
+    
+    const canvas = document.createElement('canvas');
+    canvas.id = 'galagaCanvas';
+    canvas.width = 320;
+    canvas.height = 400;
+    screen.appendChild(canvas);
+    screen.scrollTop = screen.scrollHeight;
+
+    const ctx = canvas.getContext('2d');
+    let ship = { x: 145, y: 360, w: 30, h: 20, speed: 4 };
+    let bullets = [];
+    let enemies = [];
+    let keys = {};
+    let score = 0;
+
+    for(let r=0; r<3; r++){
+        for(let c=0; c<6; c++){
+            enemies.push({ x: 40 + c*40, y: 30 + r*30, w: 20, h: 15, alive: true });
         }
     }
-}
+
+    window.addEventListener('keydown', (e) => { keys[e.key] = true; if(["ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault(); });
+    window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+    function updateGalaga() {
+        if (!galagaActive) return;
+        if (keys['ArrowLeft'] && ship.x > 0) ship.x -= ship.speed;
+        if (keys['ArrowRight'] && ship.x < canvas.width - ship.w) ship.x += ship.speed;
+        if (keys[' ']) {
+            keys[' '] = false;
+            bullets.push({ x: ship.x + 13, y: ship.y, w: 4, h: 10 });
+            playTone(900, 'square', 0.05);
+        }
+
+        bullets.forEach((b, bi) => { b.y -= 6; if(b.y < 0) bullets.splice(bi, 1); });
+
