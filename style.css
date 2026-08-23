@@ -23,8 +23,9 @@ body {
 .terminal-container {
     width: 90vw;
     max-width: 900px;
-    height: 85vh;
-    max-height: 85dvh;
+    height: 60dvh;
+    min-height: 350px; /* Prevents it from getting too squished on tiny screens */
+    max-height: 700px; /* Prevents it from getting too massive on huge screens */
     background-color: #020d02;
     border: 3px solid #1a5e1a;
     border-radius: 8px;
