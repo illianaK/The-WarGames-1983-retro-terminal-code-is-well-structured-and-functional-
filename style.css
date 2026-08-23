@@ -1,5 +1,5 @@
-/* --- RETRO TERMINAL STYLING --- */
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+/* --- 1983 MOVIE TERMINAL FRAME STYLING --- */
+@import url('https://googleapis.com');
 
 * {
     box-sizing: border-box;
@@ -11,25 +11,24 @@ body {
     background-color: #050505;
     color: #00d0ff;
     font-family: 'VT323', 'Courier New', monospace;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
 
-    /* Forces the app canvas to match the true dynamic screen height */
+    /* Lock down dynamic screen boundaries on mobile displays */
     height: 100dvh;
     width: 100vw;
     max-height: 100dvh;
 
-    /* Prevents the entire viewport from shifting or bouncing */
+    /* Prevent mobile browser bounce scrolling behaviors */
     overflow: hidden;
     position: fixed;
     top: 0;
     left: 0;
 }
 
-/* Screen Outer Frame */
+/* Screen Shell Container Frame Box */
 .terminal-container {
     width: 100%;
     height: 100%;
-
     max-width: none;
     max-height: none;
     min-height: 0;
@@ -41,49 +40,50 @@ body {
     display: flex;
     flex-direction: column;
 
-    /* Safe Area Padding prevents UI elements from being clipped by camera notches */
+    /* Safe Area Padding limits notch camera cutoff clipping conflicts */
     padding: calc(15px + env(safe-area-inset-top)) 15px calc(15px + env(safe-area-inset-bottom)) 15px;
-
     position: relative;
     overflow: hidden;
 }
 
-/* Output Display Area */
+/* Character Output Layout Matrix Block */
 .terminal-screen {
     flex: 1;
     height: 100%;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     padding-right: 10px;
     scroll-behavior: smooth;
 }
 
-/* Hide Standard Scrollbar for Authentic Retro Look */
+/* Remove default system scrollbars for cleaner cinematic replication */
 .terminal-screen::-webkit-scrollbar {
-    width: 6px;
+    width: 0px;
+    background: transparent;
 }
 
-/* Retains line heights and whitespace for ASCII/text alignment */
+/* Standard Code Text Line Configuration */
 .line {
-    line-height: 1.25;
+    line-height: 1.3;
     color: #00d0ff;
     text-shadow: 0 0 5px #00d0ff, 0 0 10px #00a2ff;
     word-break: break-word;
     white-space: pre-wrap;
+    text-transform: uppercase; /* Enforces retro movie uppercase */
 }
 
-/* Blinking cursor effect for active typing lines */
+/* Square CRT character block print cursor ticker */
 .line.typing::after {
     content: '█';
     margin-left: 2px;
     color: #00d0ff;
     text-shadow: 0 0 8px #00d0ff;
-    animation: blink 0.8s infinite;
+    animation: cursorBlink 0.8s infinite;
 }
 
-@keyframes blink {
+@keyframes cursorBlink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
 }
@@ -97,19 +97,19 @@ body {
     font-weight: bold;
 }
 
-/* Input Area Setup */
+/* User Typing Segment Alignment Frame */
 .input-line {
     display: flex;
     align-items: center;
     margin-top: 10px;
-    padding-top: 5px;
-    border-top: 1px solid #005f87;
+    padding-top: 8px;
+    border-top: 1px dashed #005f87;
 }
 
 .prompt {
     color: #00d0ff;
     margin-right: 10px;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     text-shadow: 0 0 5px rgba(0, 208, 255, 0.8);
 }
 
@@ -120,6 +120,7 @@ body {
     outline: none;
     color: #00d0ff;
     font-family: 'VT323', 'Courier New', monospace;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     text-shadow: 0 0 5px rgba(0, 208, 255, 0.8);
+    text-transform: uppercase; /* Enforces all uppercase inputs */
 }
