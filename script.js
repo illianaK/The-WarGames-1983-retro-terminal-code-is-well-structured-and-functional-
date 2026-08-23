@@ -139,7 +139,7 @@ function processInput() {
         case 'GAME_POKER': handlePokerInput(upperText); break;
         case 'GAME_CHECKERS': handleCheckersInput(upperText); break;
         case 'GAME_CHESS': handleChessInput(upperText); break;
-        case 'GAME_TTT': break; 
+        case 'GAME_TTT': break; // Controlled via dynamic grid event targets
         case 'GAME_WAR':
             if (upperText === 'STOP') {
                 clearInterval(simInterval);
