@@ -1,4 +1,4 @@
-/* --- RETRO CRT TERMINAL STYLING --- */
+/* --- RETRO TERMINAL STYLING --- */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
 * {
@@ -11,7 +11,7 @@ body {
     background-color: #050505;
     color: #33ff33;
     font-family: 'VT323', 'Courier New', monospace;
-    font-size: 1.35rem;
+    font-size: 1.1rem;
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -19,11 +19,12 @@ body {
     overflow: hidden;
 }
 
-/* CRT Screen Outer Frame */
+/* Screen Outer Frame */
 .terminal-container {
     width: 90vw;
     max-width: 900px;
     height: 85vh;
+    max-height: 85dvh;
     background-color: #020d02;
     border: 3px solid #1a5e1a;
     border-radius: 8px;
@@ -35,25 +36,10 @@ body {
     overflow: hidden;
 }
 
-/* CRT Scanlines Overlay */
-.crt-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: linear-gradient(
-        rgba(18, 16, 16, 0) 50%, 
-        rgba(0, 0, 0, 0.25) 50%
-    );
-    background-size: 100% 4px;
-    z-index: 10;
-    pointer-events: none;
-}
-
 /* Output Display Area */
 .terminal-screen {
     flex: 1;
+    height: 100%;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -66,31 +52,25 @@ body {
 .terminal-screen::-webkit-scrollbar {
     width: 6px;
 }
-/* Fixed height scrolling container */
-.terminal-screen {
-    height: 400px; /* Adjust this value (e.g., 500px or 60vh) to match your preferred height */
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding-right: 10px;
-    scroll-behavior: smooth;
-}
 
 /* Retains line heights and whitespace for ASCII/text alignment */
 .line {
     line-height: 1.25;
     text-shadow: 0 0 5px rgba(51, 255, 51, 0.7);
     word-break: break-word;
-    white-space: pre-wrap; 
+    white-space: pre-wrap;
 }
 
-/* Text Line Variants */
-.line {
-    line-height: 1.25;
-    text-shadow: 0 0 5px rgba(51, 255, 51, 0.7);
-    word-break: break-word;
-    white-space: pre-wrap;
+/* Blinking cursor effect for active typing lines */
+.line.typing::after {
+    content: '█';
+    margin-left: 2px;
+    animation: blink 0.8s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
 }
 
 .system-msg {
@@ -114,7 +94,7 @@ body {
 .prompt {
     color: #33ff33;
     margin-right: 10px;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     text-shadow: 0 0 5px rgba(51, 255, 51, 0.8);
 }
 
@@ -125,6 +105,6 @@ body {
     outline: none;
     color: #33ff33;
     font-family: 'VT323', 'Courier New', monospace;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     text-shadow: 0 0 5px rgba(51, 255, 51, 0.8);
 }
