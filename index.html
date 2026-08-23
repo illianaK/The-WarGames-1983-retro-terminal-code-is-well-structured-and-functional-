@@ -2,23 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>W.O.P.R. Mainframe Terminal</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="crt-overlay"></div>
     <div class="terminal-container">
-        <!-- CRT Monitor Screen Overlays -->
-        <div class="scanlines"></div>
-        <div class="crt-glow"></div>
-
-        <!-- Pure Text Output Console Screen -->
-        <div id="screen"></div>
-
-        <!-- Command Line Terminal Input Area -->
-        <div class="input-container">
+        <div id="screen" class="terminal-screen"></div>
+        <div class="input-line">
             <span class="prompt">&gt;</span>
-            <input type="text" id="userInput" autocomplete="off" autofocus inputmode="text" spellcheck="false">
+            <input type="text" id="userInput" autofocus autocomplete="off" spellcheck="false">
         </div>
     </div>
     <script src="script.js"></script>
