@@ -268,3 +268,4 @@ function startGinRummy() {
     state = 'GAME_RUMMY';
     gameData.hand = generateRandomHand(10);
     appendLine("<br>LOADING GIN RUMMY CORE SYSTEM...");
+    appendLine(`DEALT CARD MATRIX: [ ${gameData.hand.map(c => c.string).join(' | ')} ]`);
