@@ -1,6 +1,6 @@
 :root {
-    --glow-color: #00ffff; /* True terminal Cyan */
-    --bg-color: #001a1a;   /* Deep Cyan backdrop */
+    --glow-color: #00ffff; /* True terminal Cyan phosphor */
+    --bg-color: #001a1a;   /* Deep monochromatic cyan tint backdrop */
 }
 
 * {
@@ -22,7 +22,7 @@ body {
     padding: 20px;
 }
 
-/* CRT Screen Simulation Container */
+/* CRT Screen Simulation Frame Layout */
 .terminal-container {
     width: 100%;
     max-width: 900px;
@@ -38,7 +38,7 @@ body {
     overflow: hidden;
 }
 
-/* Phosphor Scanline Simulation Overlay */
+/* Phosphor Scanline Simulation Overlay Layer */
 .terminal-container::after {
     content: " ";
     display: block;
@@ -51,7 +51,7 @@ body {
     pointer-events: none;
 }
 
-/* CRT Screen Glow and Refresh Animation */
+/* CRT Screen Ambient Glow and Refresh Intermittent Animation */
 .crt-screen {
     flex: 1;
     padding: 25px;
@@ -124,7 +124,7 @@ input[type="text"] {
     text-shadow: 0 0 4px var(--glow-color);
 }
 
-/* Tic Tac Toe Grid Alignment */
+/* Tic Tac Toe Grid Infrastructure Parameters */
 .ttt-grid {
     display: grid;
     grid-template-columns: repeat(3, 60px);
@@ -143,13 +143,14 @@ input[type="text"] {
     cursor: pointer;
     background: rgba(0, 255, 255, 0.05);
     transition: background 0.2s;
-    line-height: 60px; /* Fix vertical alignment */
+    line-height: 60px; /* Fix vertical token clipping alignment */
 }
 
 .ttt-cell:hover {
     background: rgba(0, 255, 255, 0.2);
 }
 
+/* Secret Easter Egg Galaga Interactive Canvas Boundary box */
 #galagaCanvas {
     border: 2px solid var(--glow-color);
     background: #000;
