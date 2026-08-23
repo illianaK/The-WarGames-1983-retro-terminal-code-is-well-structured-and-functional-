@@ -38,7 +38,7 @@ body {
     overflow: hidden;
 }
 
-/* Phosphor Scanline Overlay */
+/* Phosphor Scanline Simulation Overlay */
 .terminal-container::after {
     content: " ";
     display: block;
@@ -51,7 +51,7 @@ body {
     pointer-events: none;
 }
 
-/* CRT Screen Flicker and Glow Effect */
+/* CRT Screen Glow and Refresh Animation */
 .crt-screen {
     flex: 1;
     padding: 25px;
@@ -68,7 +68,7 @@ body {
     padding-right: 5px;
 }
 
-/* Custom terminal scrollbars */
+/* Custom retro scrollbar track formatting */
 #screen::-webkit-scrollbar {
     width: 6px;
 }
@@ -125,7 +125,7 @@ input[type="text"] {
     text-shadow: 0 0 4px var(--glow-color);
 }
 
-/* Tic Tac Toe Grid */
+/* Tic Tac Toe Grid Alignment */
 .ttt-grid {
     display: grid;
     grid-template-columns: repeat(3, 60px);
@@ -150,16 +150,16 @@ input[type="text"] {
     background: rgba(0, 255, 102, 0.2);
 }
 
-/* Secret Easter Egg Canvas Element */
+/* Secret Easter Egg Galaga Canvas Box */
 #galagaCanvas {
     border: 2px solid var(--glow-color);
     background: #000;
     display: block;
     margin: 10px auto;
-    box-shadow: 0 0 15px rgba(0,255,102,0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
 }
 
 @keyframes textShadow {
-    0% { text-shadow: 0 0 4px rgba(0,255,102,0.5); }
-    100% { text-shadow: 0 0 6px rgba(0,255,102,0.9); }
+    0% { text-shadow: 0 0 4px rgba(0, 255, 102, 0.5); }
+    100% { text-shadow: 0 0 6px rgba(0, 255, 102, 0.9); }
 }
