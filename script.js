@@ -68,7 +68,6 @@ function appendLine(text, className = 'system-msg') {
             screen.scrollTop = screen.scrollHeight;
         };
 
-        // FIXED: Refined check to prevent plain strings with '{' from bypassing typewriter typing
         const isHtmlOrCss = text.trim().startsWith('<') || className === 'user-msg';
 
         if (isHtmlOrCss) {
@@ -113,7 +112,7 @@ input.addEventListener('keydown', (e) => {
 // --- TERMINAL COMMAND INPUT PROCESSOR ---
 function processInput() {
     const text = input.value.trim();
-    if (!text && state !== 'GAME_TTT') return;
+    if (!text && state !== 'GAME_TTT' && state !== 'GAME_GALAGA') return;
 
     if (text) {
         sounds.click();
@@ -122,6 +121,13 @@ function processInput() {
     }
 
     const upperText = text.toUpperCase();
+
+    // Global Easter Egg Trigger
+    if (upperText === 'GALAGA') {
+        cleanUpActiveLoops();
+        startGalaga();
+        return;
+    }
 
     if (upperText === 'QUIT' || upperText === 'EXIT' || upperText === 'BYE') {
         cleanUpActiveLoops();
@@ -153,6 +159,9 @@ function processInput() {
         case 'GAME_CHECKERS': case 'GAME_CHESS': handleBoardSimInput(upperText); break;
         case 'GAME_TTT':
             handleTicTacToeInput(upperText);
+            break;
+        case 'GAME_GALAGA':
+            handleGalagaInput(upperText);
             break;
         case 'GAME_WAR':
             if (upperText === 'STOP' || upperText === 'CANCEL') {
@@ -315,7 +324,7 @@ function handleBoardSimInput(action) {
     appendLine("SIMULATION IN PROGRESS...");
 }
 
-// --- GAME 9: TIC-TAC-TOE ---
+// --- GAME 9: TIC-TAC-TOE (MINIMAX ENGINE) ---
 function startTicTacToe() {
     state = 'GAME_TTT';
     tttBoard = ['', '', '', '', '', '', '', '', ''];
@@ -330,29 +339,27 @@ function handleTicTacToeInput(action) {
         appendLine("INVALID MOVE. ENTER AN EMPTY POSITION (1-9).");
         return;
     }
-    
+
     tttBoard[pos] = 'X';
-    
-    if (checkTTTWin('X')) {
+
+    if (checkTTTWin(tttBoard) === 'X') {
         appendLine("YOU WIN TIC-TAC-TOE! A RARE ANOMALY.");
         endGame();
         return;
     }
-    
+
     if (tttBoard.every(cell => cell !== '')) {
         appendLine("GAME IS A DRAW. A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.");
         endGame();
         return;
     }
 
-    // FIXED: Ensured empty space exists before executing CPU array query
-    let emptyIndices = tttBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
-    let cpuMove = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    const cpuMove = getBestMove(tttBoard);
     tttBoard[cpuMove] = 'O';
 
     appendLine(`W.O.P.R. PLACED 'O' AT POSITION ${cpuMove + 1}.`);
-    
-    if (checkTTTWin('O')) {
+
+    if (checkTTTWin(tttBoard) === 'O') {
         appendLine("W.O.P.R. WINS TIC-TAC-TOE.");
         endGame();
         return;
@@ -364,13 +371,128 @@ function handleTicTacToeInput(action) {
     }
 }
 
-function checkTTTWin(p) {
+function checkTTTWin(board) {
     const wins = [
-        [0,1,2], [3,4,5], [6,7,8],
-        [0,3,6], [1,4,7], [2,5,8],
-        [0,4,8], [2,4,6]
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
     ];
-    return wins.some(w => w.every(idx => tttBoard[idx] === p));
+    for (let [a, b, c] of wins) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return board[a];
+        }
+    }
+    if (board.every(cell => cell !== '')) return 'tie';
+    return null;
+}
+
+function minimax(board, depth, isMaximizing) {
+    const result = checkTTTWin(board);
+    if (result === 'O') return 10 - depth;
+    if (result === 'X') return depth - 10;
+    if (result === 'tie') return 0;
+
+    if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === '') {
+                board[i] = 'O';
+                let score = minimax(board, depth + 1, false);
+                board[i] = '';
+                bestScore = Math.max(score, bestScore);
+            }
+        }
+        return bestScore;
+    } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === '') {
+                board[i] = 'X';
+                let score = minimax(board, depth + 1, true);
+                board[i] = '';
+                bestScore = Math.min(score, bestScore);
+            }
+        }
+        return bestScore;
+    }
+}
+
+function getBestMove(board) {
+    let bestScore = -Infinity;
+    let move = -1;
+
+    for (let i = 0; i < 9; i++) {
+        if (board[i] === '') {
+            board[i] = 'O';
+            let score = minimax(board, 0, false);
+            board[i] = '';
+            if (score > bestScore) {
+                bestScore = score;
+                move = i;
+            }
+        }
+    }
+    return move;
+}
+
+// --- EASTER EGG: GALAGA ARCADE SIMULATION ---
+function startGalaga() {
+    state = 'GAME_GALAGA';
+    gameData = {
+        score: 0,
+        shipsRemaining: 3,
+        stage: 1,
+        aliens: 10
+    };
+
+    appendLine("<br>*** UNAUTHORIZED SECTOR DETECTED ***");
+    appendLine("LOADING GALAGA ARCADE EMULATION PROTOCOL v1.981...");
+    appendLine("==============================================");
+    appendLine(" COMMANDS: 'LEFT' | 'RIGHT' | 'FIRE' | 'STATUS'");
+    appendLine("==============================================");
+    appendLine(`STAGE ${gameData.stage}: INCOMING SWARM FORMATION DETECTED! [👾 👾 👾 👾 👾]`);
+}
+
+function handleGalagaInput(action) {
+    if (action === 'FIRE' || action === 'SHOOT' || action === 'F') {
+        sounds.print();
+        const hit = Math.random() > 0.3;
+        
+        if (hit) {
+            gameData.aliens--;
+            gameData.score += 100 * gameData.stage;
+            appendLine(`PEW! 💥 DIRECT HIT! INSECTOID DESTROYED. (Aliens Left: ${gameData.aliens} | Score: ${gameData.score})`);
+        } else {
+            appendLine("PEW! MISSED TARGET. THE SWARM DIVES!");
+        }
+
+        if (gameData.aliens > 0 && Math.random() < 0.25) {
+            sounds.warn();
+            gameData.shipsRemaining--;
+            appendLine(`⚠️ WARNING! ALIEN TRACTOR BEAM / DIVE BOMB HIT YOUR FIGHTER! Ships remaining: ${gameData.shipsRemaining}`);
+            
+            if (gameData.shipsRemaining <= 0) {
+                appendLine("<br>GAME OVER - FIGHTER FLEET DESTROYED.");
+                appendLine(`FINAL SCORE: ${gameData.score}`);
+                endGame();
+                return;
+            }
+        }
+
+        if (gameData.aliens <= 0) {
+            gameData.stage++;
+            gameData.aliens = 10 + gameData.stage * 2;
+            appendLine(`<br>✨ STAGE ${gameData.stage - 1} CLEAR! CHALLENGING STAGE COMPLETED.`);
+            appendLine(`ADVANCING TO STAGE ${gameData.stage}. NEW INSECTOID FORMATION APPROACHING...`);
+        }
+
+    } else if (action === 'LEFT' || action === 'L' || action === 'RIGHT' || action === 'R') {
+        appendLine(`STARFIGHTER SHIFTED ${action}. EVASIVE MANEUVER EXECUTED.`);
+    } else if (action === 'STATUS') {
+        appendLine(`STATUS REPORT -> SCORE: ${gameData.score} | SHIPS: ${gameData.shipsRemaining} | STAGE: ${gameData.stage} | SWARM: ${gameData.aliens}`);
+    } else {
+        appendLine("INVALID COMMAND. USE 'FIRE', 'LEFT', 'RIGHT', OR 'STATUS'.");
+    }
 }
 
 // --- GAME 10: GLOBAL THERMONUCLEAR WAR ---
