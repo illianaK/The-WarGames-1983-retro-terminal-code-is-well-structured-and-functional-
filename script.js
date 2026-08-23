@@ -133,9 +133,13 @@ function processInput() {
 
         case 'GAME_MAZE': handleMazeInput(upperText); break;
         case 'GAME_BJ': handleBlackjackInput(upperText); break;
-        case 'GAME_RUMMY': case 'GAME_HEARTS': case 'GAME_BRIDGE': case 'GAME_POKER':
-            handleCardSimInput(upperText); break;
-        case 'GAME_CHECKERS': case 'GAME_CHESS': handleBoardSimInput(upperText); break;
+        case 'GAME_RUMMY': handleGinRummyInput(upperText); break;
+        case 'GAME_HEARTS': handleHeartsInput(upperText); break;
+        case 'GAME_BRIDGE': handleBridgeInput(upperText); break;
+        case 'GAME_POKER': handlePokerInput(upperText); break;
+        case 'GAME_CHECKERS': handleCheckersInput(upperText); break;
+        case 'GAME_CHESS': handleChessInput(upperText); break;
+        case 'GAME_TTT': break; // Handled directly inside cell event listeners
         case 'GAME_WAR':
             if (upperText === 'STOP') {
                 clearInterval(simInterval);
@@ -157,15 +161,28 @@ function cleanUpActiveLoops() {
 function handleGameSelection(input) {
     if (input.includes("MAZE") || input === "1") startMaze();
     else if (input.includes("BLACK") || input === "2") startBlackjack();
-    else if (input.includes("GIN") || input === "3") startCardSim("GIN RUMMY", "GAME_RUMMY");
-    else if (input.includes("HEART") || input === "4") startCardSim("HEARTS", "GAME_HEARTS");
-    else if (input.includes("BRIDGE") || input === "5") startCardSim("BRIDGE", "GAME_BRIDGE");
-    else if (input.includes("CHECKER") || input === "6") startBoardSim("CHECKERS", "GAME_CHECKERS");
-    else if (input.includes("CHESS") || input === "7") startBoardSim("CHESS", "GAME_CHESS");
-    else if (input.includes("POKER") || input === "8") startCardSim("POKER", "GAME_POKER");
+    else if (input.includes("GIN") || input === "3") startGinRummy();
+    else if (input.includes("HEART") || input === "4") startHearts();
+    else if (input.includes("BRIDGE") || input === "5") startBridge();
+    else if (input.includes("CHECKER") || input === "6") startCheckers();
+    else if (input.includes("CHESS") || input === "7") startChess();
+    else if (input.includes("POKER") || input === "8") startPoker();
     else if (input.includes("TIC") || input === "9") startTicTacToe();
     else if (input.includes("WAR") || input.includes("GLOBAL") || input === "10") startGlobalWar();
     else appendLine("UNKNOWN SELECTION. ACCESS DENIED FROM NORAD DATA BUFFER COMPARTMENT.");
+}
+
+// --- HELPER FOR DECK GENERATION ---
+function generateRandomHand(cardCount) {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    let hand = [];
+    for (let i = 0; i < cardCount; i++) {
+        let suit = suits[Math.floor(Math.random() * suits.length)];
+        let rank = ranks[Math.floor(Math.random() * ranks.length)];
+        hand.push({ rank, suit, string: `${rank}${suit}` });
+    }
+    return hand;
 }
 
 // --- GAME 1: FALKEN'S MAZE ---
@@ -246,23 +263,8 @@ function handleBlackjackInput(action) {
     }
 }
 
-// --- GENERIC INTERMEDIARY CARD AND BOARD SIMULATORS ---
-function startCardSim(name, nextState) {
-    state = nextState;
-    appendLine(`<br>LOADING ${name} INTERFACE EMULATOR...`);
-    appendLine("GENERATING CARD VECTOR STACKS...");
-    setTimeout(() => {
-        appendLine("DEALING COMPLETE. CURRENT STRATEGY PROFILE SUGGESTS RETREAT.");
-        appendLine("ENTER COMMAND 'PLAY' OR 'QUIT':");
-    }, 600);
-}
-function handleCardSimInput(action) {
-    if (action === 'PLAY') {
-        appendLine("COMPUTING PROBABILITIES... STALEMATE DETECTED. NO ADVANTAGE GAINED.");
-        endGame();
-    } else appendLine("INPUT COMMAND 'PLAY' TO RUN ALGORITHM OR 'QUIT' TO EXIT.");
-}
-
-function startBoardSim(name, nextState) {
-    state = nextState;
-    appendLine(`<br>ESTABLISHING BOARD GEOMETRY MATRIX FOR ${name}...`);
+// --- GAME 3: GIN RUMMY ---
+function startGinRummy() {
+    state = 'GAME_RUMMY';
+    gameData.hand = generateRandomHand(10);
+    appendLine("<br>LOADING GIN RUMMY CORE SYSTEM...");
