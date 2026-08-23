@@ -145,7 +145,7 @@ function startGalaga() {
   print("Controls: ARROW KEYS to move, SPACEBAR to fire. Press 'Q' to abort.\n");
   galagaCanvas.style.display = 'block';
   galagaActive = true;
-  
+
   player = { x: galagaCanvas.width / 2 - 12, y: galagaCanvas.height - 30, w: 24, h: 20, speed: 4 };
   bullets = [];
   enemies = [];
@@ -201,7 +201,8 @@ function galagaLoop() {
     lastFire = Date.now();
   }
 
-  ctx.fillStyle = '#00ff66';
+  // Player ship color updated to match cyan terminal theme
+  ctx.fillStyle = '#00f3ff';
   ctx.fillRect(player.x, player.y, player.w, player.h);
 
   ctx.fillStyle = '#ffff00';
@@ -236,7 +237,7 @@ function galagaLoop() {
   enemyBullets.forEach((eb, ebi) => {
     eb.y += 4;
     ctx.fillRect(eb.x, eb.y, eb.w, eb.h);
-    
+
     if (eb.x < player.x + player.w && eb.x + eb.w > player.x && eb.y < player.y + player.h && eb.y + eb.h > player.y) {
       playBeep(150, 'sawtooth', 0.4);
       endGalaga();
