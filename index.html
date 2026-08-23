@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>W.O.P.R. TERMINAL</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W.O.P.R. Mainframe Terminal</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="terminal-container">
+        <!-- CRT Monitor Effects -->
+        <div class="scanlines"></div>
+        <div class="crt-glow"></div>
 
-<div class="crt">
-  <div id="output"></div>
-  <canvas id="galagaCanvas" width="448" height="512"></canvas>
-  <div class="input-line" id="inputLine">
-    <span class="prompt">&gt;</span>
-    <input type="text" id="userInput" autofocus autocomplete="off" spellcheck="false">
-  </div>
-</div>
+        <!-- Pure Text Output Console Screen -->
+        <div id="screen">
+            <div class="line system-msg">LOGON: WOPR / NORAD-CHEYENNE-MT</div>
+            <div class="line system-msg">SHALL WE PLAY A GAME?</div>
+        </div>
 
-<script src="js/app.js"></script>
+        <!-- The Pure Command-Line Terminal Prompt -->
+        <div class="input-container">
+            <span class="prompt">&gt;</span>
+            <input type="text" id="userInput" autocomplete="off" autofocus>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
