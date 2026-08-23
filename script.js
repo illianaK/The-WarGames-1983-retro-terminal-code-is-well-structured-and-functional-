@@ -63,7 +63,7 @@ function appendLine(text, className = 'system-msg') {
         const line = document.createElement('div');
         line.className = `line ${className}`;
         screen.appendChild(line);
-        
+
         if ((text.includes('<') && text.includes('>')) || className === 'user-msg') {
             line.innerHTML = text;
             screen.scrollTop = screen.scrollHeight;
@@ -110,7 +110,7 @@ function processInput() {
     // Secret Easter Egg Trigger
     if (upperText === 'GALAGA') {
         cleanUpActiveLoops();
-        startGalagaSecretEgg(1, 0, 3);
+        startGalagaSecretEgg();
         return;
     }
 
@@ -181,14 +181,14 @@ function handleMazeInput(action) {
         if (action === 'NORTH') {
             gameData.room = 2;
             appendLine("YOU INSIDE THE MAINFRAME ROOM. CHASSIS LIGHTS BLINK STEADILY.");
-            appendLine("A DESK SITS TO THE WEST containing a diary. 'WEST' OR GO BACK 'SOUTH'?");
+            appendLine("A DESK SITS TO THE WEST CONTAINING A DIARY. 'WEST' OR GO BACK 'SOUTH'?");
         } else if (action === 'EAST') {
             appendLine("SECURITY GRATING BARRED FROM THE ROOM ENTRY WAY. CHOOSE ANOTHER ACCESS VECTOR.");
         } else appendLine("COMMAND NOT COGNIZANT. OPTIONS: NORTH, EAST.");
     } else if (gameData.room === 2) {
         if (action === 'WEST') {
             appendLine("YOU OPEN FALKEN'S DIARY. THE INSCRIPTION READS: 'THE WINNING MOVE IS NOT TO PLAY.'");
-            appendLine("MAZE CONCLUDED successfully. TRANSFERRING TERMINAL COMMAND LOGS OUT.");
+            appendLine("MAZE CONCLUDED SUCCESSFULLY. TRANSFERRING TERMINAL COMMAND LOGS OUT.");
             endGame();
         } else if (action === 'SOUTH') {
             gameData.room = 1;
@@ -219,7 +219,7 @@ function handleBlackjackInput(action) {
         gameData.player.push(getRandomCard());
         let pTotal = calcHand(gameData.player);
         if (pTotal > 21) {
-            appendLine(`HAND VALUE CRASH: ${pTotal}. YOU BUSTED. W.O.P.R. WINS.`);
+            appendLine(`YOUR HAND VALUE: ${pTotal} - YOU BUSTED! W.O.P.R. WINS.`);
             endGame();
         } else {
             displayBJStatus();
@@ -231,32 +231,38 @@ function handleBlackjackInput(action) {
             dTotal = calcHand(gameData.dealer);
         }
         let pTotal = calcHand(gameData.player);
-        appendLine(`FINAL DEALER COUNT: ${dTotal} | YOUR HAND COUNT: ${pTotal}`);
+        appendLine(`YOUR FINAL VALUE: ${pTotal}`);
+        appendLine(`W.O.P.R. FINAL VALUE: ${dTotal}`);
         if (dTotal > 21 || pTotal > dTotal) {
-            appendLine("YOU WIN! STRATEGIC ANOMALY.");
-        } else if (dTotal === pTotal) {
-            appendLine("ROUND TIE. GAME IS A DRAW.");
+            appendLine("YOU WIN! LOGGING SUCCESS STRAT TO COMLINK.");
+        } else if (dTotal > pTotal) {
+            appendLine("W.O.P.R. WINS. LOGIC ENGINE OPTIMIZED.");
         } else {
-            appendLine("W.O.P.R. HAND DOMINATES. YOU LOSE.");
+            appendLine("STALEMATE STANDOFF. TIED GAME STACK MATCH.");
         }
         endGame();
     } else {
-        appendLine("INVALID COMPILING KEYWORD. SUBMIT ACTION 'HIT' OR 'STAND'.");
+        appendLine("INVALID COMMAND. INPUT 'HIT' OR 'STAND'");
     }
 }
 
-// --- GAMES 3, 4, 5, 8: CARDS SIMULATOR BASE ---
-function startCardSim(title, targetState) {
-    state = targetState;
-    appendLine(`<br>ESTABLISHING SECURE CONNECTION CARD DECK PARSER FOR: ${title}`);
-    appendLine("DISTRIBUTING SYSTEM DATA PACKETS HAND GENERATORS...");
+// --- GENERIC INTERMEDIARY CARD AND BOARD SIMULATORS ---
+function startCardSim(name, nextState) {
+    state = nextState;
+    appendLine(`<br>LOADING ${name} INTERFACE EMULATOR...`);
+    appendLine("GENERATING CARD VECTOR STACKS...");
     setTimeout(() => {
-        appendLine("DEALER COMPLETED. YOUR HAND REVEALS STRATEGIC METRICS:");
-        appendLine("  [ACE ♠] [JACK ♣] [KING ♦] [10 ♥] [7 ♠]");
-        appendLine("W.O.P.R. OFFERS CARD SHIFT SWAP SYSTEM EXCHANGE. ACTION OPTIONS: 'PLAY' OR 'FOLD'");
-    }, 400);
+        appendLine("DEALING COMPLETE. CURRENT STRATEGY PROFILE SUGGESTS RETREAT.");
+        appendLine("ENTER COMMAND 'PLAY' OR 'QUIT':");
+    }, 600);
 }
 function handleCardSimInput(action) {
-    if (action === 'PLAY' || action === 'BET') {
-        if (Math.random() > 0.45) appendLine("SHOWDOWN LOGGED: YOUR HIGHER VALUES CONCLUDE VICTORY CONSTRAINTS.");
-        else appendLine("SHOWDOWN LOGGED: W.O.P.R MAINFRAME DETECTS WINNING FLUSH CONDITION.");
+    if (action === 'PLAY') {
+        appendLine("COMPUTING PROBABILITIES... STALEMATE DETECTED. NO ADVANTAGE GAINED.");
+        endGame();
+    } else appendLine("INPUT COMMAND 'PLAY' TO RUN ALGORITHM OR 'QUIT' TO EXIT.");
+}
+
+function startBoardSim(name, nextState) {
+    state = nextState;
+    appendLine(`<br>ESTABLISHING BOARD GEOMETRY MATRIX FOR ${name}...`);
