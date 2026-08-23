@@ -20,8 +20,9 @@ body {
 
 .crt {
   width: 100%;
-  max-width: 900px;
-  height: 90vh;
+  max-width: 800px;
+  height: 550px;
+  max-height: 80vh;
   background-color: #001100;
   border: 4px solid var(--dim-green);
   border-radius: 12px;
@@ -80,4 +81,6 @@ canvas {
   border: 2px solid var(--green);
   margin: 10px 0;
   align-self: center;
+  max-height: 320px;
+  width: auto;
 }
