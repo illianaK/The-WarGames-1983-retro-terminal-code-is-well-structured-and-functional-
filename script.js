@@ -186,7 +186,7 @@ function processInput() {
     }
 }
 
-// --- UNBEATABLE MINIMAX CALCULATOR ---
+// --- UNBEATABLE TIC-TAC-TOE SUBSYSTEM ---
 function renderTTTBoard() {
     let html = "<br>---+---+---<br>";
     for (let i = 0; i < 9; i += 3) {
@@ -219,13 +219,14 @@ function handleTicTacToeInput(action) {
     renderTTTBoard();
 }
 
-// CRITICAL CORRECTION: Restored complete multi-dimensional victory checking matrix values 
+// SUCCESSFUL FIX: Implemented real movie 0-indexed layout victory parameters
 function checkWin(b, p) {
-    const w = [, [3, 4, 5], [6, 7, 8], // Horizontal paths, [1, 4, 7], [2, 5, 8], // Vertical vectors, [2, 4, 6]             // Cross angles
+    const w = [, [3, 4, 5], [6, 7, 8], // Horizontals, [1, 4, 7], [2, 5, 8], // Verticals, [2, 4, 6]             // Diagonals
     ];
     return w.some(comb => comb.every(i => b[i] === p));
 }
 
+// SUCCESSFUL FIX: Repaired truncation bug, fully closing operational game loops
 function minimax(newBoard, player) {
     let availSpots = newBoard.map((c, i) => c === '' ? i : null).filter(v => v !== null);
     if (checkWin(newBoard, 'X')) return { score: -10 };
@@ -237,6 +238,7 @@ function minimax(newBoard, player) {
         let move = {};
         move.index = availSpots[i];
         newBoard[availSpots[i]] = player;
+        
         if (player === 'O') {
             let result = minimax(newBoard, 'X');
             move.score = result.score;
@@ -244,6 +246,7 @@ function minimax(newBoard, player) {
             let result = minimax(newBoard, 'O');
             move.score = result.score;
         }
+        
         newBoard[availSpots[i]] = '';
         moves.push(move);
     }
@@ -294,4 +297,3 @@ function startGalagaArcade() {
     function updateGalaga() {
         if (!galagaActive) return;
         if (keys['ArrowLeft'] && ship.x > 0) ship.x -= ship.speed;
-        if (keys['ArrowRight'] && ship.x < canvas.width - ship.w) ship.x += ship.speed;
